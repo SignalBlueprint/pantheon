@@ -52,6 +52,9 @@ import {
   DbReplayArchive,
   DbReplayArchiveInsert,
   DbReplayArchiveUpdate,
+  DbSeasonRegistration,
+  DbSeasonRegistrationInsert,
+  DbSeasonRegistrationUpdate,
 } from './types.js';
 
 /**
@@ -271,6 +274,34 @@ export const territoryRepo = {
         db.from('territories').update(data).eq('id', id)
       )
     );
+  },
+
+  async updateByCoords(shardId: string, q: number, r: number, updates: DbTerritoryUpdate): Promise<DbTerritory | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('territories')
+      .update(updates)
+      .eq('shard_id', shardId)
+      .eq('q', q)
+      .eq('r', r)
+      .select()
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async resetAll(shardId: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('territories')
+      .update({
+        owner_id: null,
+        population: 0,
+        buildings: [],
+        active_effects: [],
+      })
+      .eq('shard_id', shardId);
+    if (error) throw error;
   },
 };
 
@@ -1459,5 +1490,98 @@ export const replayArchiveRepo = {
       .single();
     if (error) throw error;
     return data;
+  },
+};
+
+/**
+ * Season registration repository
+ */
+export const seasonRegistrationRepo = {
+  async getBySeason(seasonId: string): Promise<DbSeasonRegistration[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('season_registrations')
+      .select('*')
+      .eq('season_id', seasonId)
+      .order('registered_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByDeity(seasonId: string, deityId: string): Promise<DbSeasonRegistration | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('season_registrations')
+      .select('*')
+      .eq('season_id', seasonId)
+      .eq('deity_id', deityId)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async getConfirmed(seasonId: string): Promise<DbSeasonRegistration[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('season_registrations')
+      .select('*')
+      .eq('season_id', seasonId)
+      .in('status', ['pending', 'confirmed'])
+      .order('registered_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(registration: DbSeasonRegistrationInsert): Promise<DbSeasonRegistration> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('season_registrations')
+      .insert(registration)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: DbSeasonRegistrationUpdate): Promise<DbSeasonRegistration> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('season_registrations')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async cancel(id: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('season_registrations')
+      .update({ status: 'cancelled' })
+      .eq('id', id);
+    if (error) throw error;
+  },
+
+  async confirmAll(seasonId: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('season_registrations')
+      .update({ status: 'confirmed' })
+      .eq('season_id', seasonId)
+      .eq('status', 'pending');
+    if (error) throw error;
+  },
+
+  async assignPositions(seasonId: string, assignments: Array<{ id: string; position: number }>): Promise<void> {
+    if (!supabase) return;
+    for (const { id, position } of assignments) {
+      const { error } = await supabase
+        .from('season_registrations')
+        .update({ starting_position: position })
+        .eq('id', id);
+      if (error) throw error;
+    }
   },
 };

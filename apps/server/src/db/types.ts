@@ -398,3 +398,22 @@ export type DbReplayArchiveInsert = Omit<DbReplayArchive, 'id' | 'created_at'>;
 
 // Update types for event tables
 export type DbReplayArchiveUpdate = Partial<Pick<DbReplayArchive, 'status' | 'highlight_ticks' | 'storage_path'>>;
+
+/**
+ * Database row for season_registrations table
+ */
+export interface DbSeasonRegistration {
+  id: string;
+  season_id: string;
+  deity_id: string;
+  faction_name: string;
+  faction_color: string;
+  starting_position: number | null;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  registered_at: string;
+  updated_at: string;
+}
+
+// Insert/update types for season registrations
+export type DbSeasonRegistrationInsert = Omit<DbSeasonRegistration, 'id' | 'registered_at' | 'updated_at'>;
+export type DbSeasonRegistrationUpdate = Partial<Omit<DbSeasonRegistration, 'id' | 'season_id' | 'deity_id' | 'registered_at' | 'updated_at'>>;

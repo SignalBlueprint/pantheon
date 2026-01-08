@@ -271,9 +271,9 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 #### Season Transition
 
 - [x] Archive completed season data — snapshot final state for history viewing
-- [ ] Generate new map for next season — fresh terrain, new starting positions
-- [ ] Reset faction progress — all players start equal, only cosmetics persist
-- [ ] Allow early registration — players can claim starting spots before season begins
+- [x] Generate new map for next season — fresh terrain, new starting positions
+- [x] Reset faction progress — all players start equal, only cosmetics persist
+- [x] Allow early registration — players can claim starting spots before season begins
 
 **New Infrastructure Required:**
 - `seasons` table

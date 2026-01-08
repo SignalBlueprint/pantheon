@@ -280,6 +280,39 @@ export interface DominanceTracking {
   isActive: boolean;
 }
 
+// ============== SEASON REGISTRATION SYSTEM ==============
+
+// Registration constants
+export const REGISTRATION_WINDOW_HOURS = 24; // Hours before season starts when registration opens
+export const REGISTRATION_MIN_PLAYERS = 2; // Minimum players to start
+export const REGISTRATION_MAX_PLAYERS = 8; // Maximum players per shard
+
+// Season registration entry
+export interface SeasonRegistration {
+  id: string;
+  seasonId: string;
+  deityId: string;
+  factionName: string;
+  factionColor: string;
+  registeredAt: number; // timestamp
+  startingPosition?: number; // assigned position index (0-based)
+  status: 'pending' | 'confirmed' | 'cancelled';
+}
+
+// Season transition info
+export interface SeasonTransitionInfo {
+  previousSeasonId?: string;
+  previousWinnerId?: string;
+  previousVictoryType?: VictoryType;
+  newSeasonId: string;
+  newSeasonName: string;
+  startsAt: number;
+  registrationOpen: boolean;
+  registeredCount: number;
+  maxPlayers: number;
+  registrations: SeasonRegistration[];
+}
+
 // ============== SPECIALIZATION SYSTEM ==============
 
 // Specialization constants

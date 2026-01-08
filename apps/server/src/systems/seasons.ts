@@ -9,10 +9,17 @@ import {
   Season,
   SeasonRanking,
   VictoryType,
+  SeasonRegistration,
+  SeasonTransitionInfo,
+  Territory,
   SEASON_DURATION_WEEKS,
   SEASON_DOMINANCE_THRESHOLD,
   SEASON_DOMINANCE_TICKS,
   REWARD_TIERS,
+  REGISTRATION_WINDOW_HOURS,
+  REGISTRATION_MIN_PLAYERS,
+  REGISTRATION_MAX_PLAYERS,
+  DIVINE_POWER_START,
 } from '@pantheon/shared';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -20,13 +27,19 @@ import {
   legacyRepo,
   seasonArchiveRepo,
   dominanceTrackingRepo,
+  seasonRegistrationRepo,
+  territoryRepo,
+  factionRepo,
 } from '../db/repositories.js';
 import {
   DbSeasonInsert,
   DbLegacyInsert,
   DbSeasonArchiveInsert,
   DbDominanceTrackingInsert,
+  DbSeasonRegistrationInsert,
 } from '../db/types.js';
+import { generateHexMap } from '../world/mapgen.js';
+import { selectStartingPositions, createFaction } from '../world/faction.js';
 
 // In-memory season state (loaded from DB at startup)
 let currentSeason: Season | null = null;
@@ -505,4 +518,414 @@ export async function getDeityLegacy(deityId: string): Promise<any[]> {
     console.error('[Season] Failed to get deity legacy:', error);
     return [];
   }
+}
+
+// ============== SEASON TRANSITION ==============
+
+// In-memory pending season for registration
+let pendingSeason: Season | null = null;
+
+/**
+ * Prepare the next season with registration period
+ */
+export async function prepareNextSeason(
+  shardId: string,
+  previousSeason?: Season
+): Promise<Season> {
+  const seasonNumber = previousSeason
+    ? parseInt(previousSeason.name.replace('Season ', '')) + 1
+    : 1;
+  const name = `Season ${seasonNumber}`;
+
+  const now = Date.now();
+  const registrationOpensAt = now;
+  const startsAt = now + REGISTRATION_WINDOW_HOURS * 60 * 60 * 1000;
+  const endsAt = startsAt + SEASON_DURATION_WEEKS * 7 * 24 * 60 * 60 * 1000;
+
+  const dbSeason: DbSeasonInsert = {
+    shard_id: shardId,
+    name,
+    started_at: new Date(startsAt).toISOString(),
+    ends_at: new Date(endsAt).toISOString(),
+    status: 'pending', // Pending = registration open
+    winner_id: null,
+    winner_deity_id: null,
+    victory_type: null,
+    final_rankings: [],
+  };
+
+  try {
+    const created = await seasonRepo.create(dbSeason);
+
+    pendingSeason = {
+      id: created.id,
+      shardId: created.shard_id,
+      name: created.name,
+      startedAt: startsAt,
+      endsAt: new Date(created.ends_at).getTime(),
+      status: 'pending',
+      finalRankings: [],
+    };
+
+    console.log(`[Season] Prepared next season: ${name}, registration opens now, starts at ${new Date(startsAt).toISOString()}`);
+    return pendingSeason;
+  } catch (error) {
+    console.error('[Season] Failed to prepare next season:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get the pending season awaiting registration
+ */
+export function getPendingSeason(): Season | null {
+  return pendingSeason;
+}
+
+/**
+ * Register a player for an upcoming season
+ */
+export async function registerForSeason(
+  seasonId: string,
+  deityId: string,
+  factionName: string,
+  factionColor: string
+): Promise<{ success: boolean; error?: string; registration?: SeasonRegistration }> {
+  try {
+    // Check if season exists and is in registration phase
+    const season = await seasonRepo.getById(seasonId);
+    if (!season) {
+      return { success: false, error: 'Season not found' };
+    }
+
+    if (season.status !== 'pending') {
+      return { success: false, error: 'Season registration is closed' };
+    }
+
+    // Check if already registered
+    const existing = await seasonRegistrationRepo.getByDeity(seasonId, deityId);
+    if (existing && existing.status !== 'cancelled') {
+      return { success: false, error: 'Already registered for this season' };
+    }
+
+    // Check max players
+    const registrations = await seasonRegistrationRepo.getConfirmed(seasonId);
+    if (registrations.length >= REGISTRATION_MAX_PLAYERS) {
+      return { success: false, error: 'Season is full' };
+    }
+
+    // Create registration
+    const insert: DbSeasonRegistrationInsert = {
+      season_id: seasonId,
+      deity_id: deityId,
+      faction_name: factionName,
+      faction_color: factionColor,
+      starting_position: null,
+      status: 'pending',
+    };
+
+    const created = await seasonRegistrationRepo.create(insert);
+
+    const registration: SeasonRegistration = {
+      id: created.id,
+      seasonId: created.season_id,
+      deityId: created.deity_id,
+      factionName: created.faction_name,
+      factionColor: created.faction_color,
+      registeredAt: new Date(created.registered_at).getTime(),
+      status: created.status,
+    };
+
+    console.log(`[Season] ${factionName} registered for ${season.name}`);
+    return { success: true, registration };
+  } catch (error) {
+    console.error('[Season] Failed to register for season:', error);
+    return { success: false, error: 'Registration failed' };
+  }
+}
+
+/**
+ * Cancel a season registration
+ */
+export async function cancelRegistration(
+  seasonId: string,
+  deityId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const registration = await seasonRegistrationRepo.getByDeity(seasonId, deityId);
+    if (!registration) {
+      return { success: false, error: 'Registration not found' };
+    }
+
+    if (registration.status === 'cancelled') {
+      return { success: false, error: 'Registration already cancelled' };
+    }
+
+    await seasonRegistrationRepo.cancel(registration.id);
+    console.log(`[Season] Registration cancelled for deity ${deityId}`);
+    return { success: true };
+  } catch (error) {
+    console.error('[Season] Failed to cancel registration:', error);
+    return { success: false, error: 'Cancellation failed' };
+  }
+}
+
+/**
+ * Get season transition info (for UI)
+ */
+export async function getSeasonTransitionInfo(shardId: string): Promise<SeasonTransitionInfo | null> {
+  try {
+    // Get current/previous season
+    const previousSeason = currentSeason;
+
+    // Get pending season
+    let season = pendingSeason;
+    if (!season) {
+      // Try to load from DB
+      const dbSeason = await seasonRepo.getActive(shardId);
+      if (dbSeason && dbSeason.status === 'pending') {
+        season = {
+          id: dbSeason.id,
+          shardId: dbSeason.shard_id,
+          name: dbSeason.name,
+          startedAt: new Date(dbSeason.started_at).getTime(),
+          endsAt: new Date(dbSeason.ends_at).getTime(),
+          status: dbSeason.status,
+          finalRankings: [],
+        };
+      }
+    }
+
+    if (!season) {
+      return null;
+    }
+
+    // Get registrations
+    const dbRegistrations = await seasonRegistrationRepo.getConfirmed(season.id);
+    const registrations: SeasonRegistration[] = dbRegistrations.map((r) => ({
+      id: r.id,
+      seasonId: r.season_id,
+      deityId: r.deity_id,
+      factionName: r.faction_name,
+      factionColor: r.faction_color,
+      registeredAt: new Date(r.registered_at).getTime(),
+      startingPosition: r.starting_position ?? undefined,
+      status: r.status,
+    }));
+
+    const info: SeasonTransitionInfo = {
+      previousSeasonId: previousSeason?.id,
+      previousWinnerId: previousSeason?.winnerId,
+      previousVictoryType: previousSeason?.victoryType,
+      newSeasonId: season.id,
+      newSeasonName: season.name,
+      startsAt: season.startedAt,
+      registrationOpen: season.status === 'pending',
+      registeredCount: registrations.length,
+      maxPlayers: REGISTRATION_MAX_PLAYERS,
+      registrations,
+    };
+
+    return info;
+  } catch (error) {
+    console.error('[Season] Failed to get transition info:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate a new map for the next season
+ */
+export function generateNewSeasonMap(radius: number = 4): Map<string, Territory> {
+  console.log(`[Season] Generating new map with radius ${radius}`);
+  return generateHexMap(radius);
+}
+
+/**
+ * Reset all faction progress for a new season
+ * Preserves only cosmetic unlocks tied to deity accounts
+ */
+export function resetFactionProgress(state: GameState): void {
+  console.log(`[Season] Resetting faction progress for ${state.factions.size} factions`);
+
+  // Clear all territory ownership
+  for (const territory of state.territories.values()) {
+    territory.owner = null;
+    territory.population = 0;
+    territory.buildings = [];
+    territory.activeEffects = [];
+  }
+
+  // Clear all factions
+  state.factions.clear();
+
+  // Clear active sieges
+  state.sieges.clear();
+
+  // Clear relations
+  state.relations.clear();
+
+  // Clear pending battles
+  state.pendingBattles = [];
+
+  // Reset tick
+  state.tick = 0;
+
+  console.log('[Season] Faction progress reset complete');
+}
+
+/**
+ * Transition to the next season (called after registration period)
+ */
+export async function transitionToNextSeason(
+  state: GameState,
+  mapRadius: number = 4
+): Promise<{ success: boolean; error?: string; season?: Season }> {
+  if (!pendingSeason) {
+    return { success: false, error: 'No pending season to transition to' };
+  }
+
+  try {
+    // Get registrations
+    const registrations = await seasonRegistrationRepo.getConfirmed(pendingSeason.id);
+
+    if (registrations.length < REGISTRATION_MIN_PLAYERS) {
+      return {
+        success: false,
+        error: `Not enough players registered (${registrations.length}/${REGISTRATION_MIN_PLAYERS})`,
+      };
+    }
+
+    console.log(`[Season] Transitioning to ${pendingSeason.name} with ${registrations.length} players`);
+
+    // 1. Generate new map
+    const newTerritories = generateNewSeasonMap(mapRadius);
+
+    // 2. Reset faction progress
+    resetFactionProgress(state);
+
+    // 3. Replace territories with new map
+    state.territories = newTerritories;
+
+    // 4. Select starting positions for registered players
+    const startingPositions = selectStartingPositions(newTerritories, registrations.length);
+
+    // 5. Create factions for each registration
+    const positionAssignments: Array<{ id: string; position: number }> = [];
+
+    for (let i = 0; i < registrations.length; i++) {
+      const reg = registrations[i];
+      const startTerritoryId = startingPositions[i];
+      const startTerritory = newTerritories.get(startTerritoryId);
+
+      if (!startTerritory) {
+        console.error(`[Season] Starting territory not found: ${startTerritoryId}`);
+        continue;
+      }
+
+      // Create faction
+      const faction = createFaction(
+        reg.faction_name,
+        reg.faction_color,
+        startTerritory,
+        reg.deity_id,
+        0 // Starting tick
+      );
+
+      // Set territory ownership
+      startTerritory.owner = faction.id;
+      startTerritory.population = 100; // Starting population
+
+      // Add faction to state
+      state.factions.set(faction.id, faction);
+
+      // Track position assignment
+      positionAssignments.push({ id: reg.id, position: i });
+
+      console.log(`[Season] Created faction ${faction.name} at ${startTerritoryId}`);
+    }
+
+    // 6. Confirm all registrations and assign positions
+    await seasonRegistrationRepo.confirmAll(pendingSeason.id);
+    await seasonRegistrationRepo.assignPositions(pendingSeason.id, positionAssignments);
+
+    // 7. Update season status to active
+    await seasonRepo.update(pendingSeason.id, { status: 'active' });
+
+    // 8. Persist new state to database
+    if (state.shardId) {
+      // Update territories
+      for (const t of state.territories.values()) {
+        await territoryRepo.updateByCoords(state.shardId, t.q, t.r, {
+          owner_id: t.owner,
+          population: t.population,
+          food: t.food,
+          production: t.production,
+          buildings: t.buildings,
+          active_effects: t.activeEffects,
+        });
+      }
+
+      // Create factions in DB
+      for (const f of state.factions.values()) {
+        await factionRepo.create({
+          shard_id: state.shardId,
+          deity_id: f.deityId || null,
+          name: f.name,
+          color: f.color,
+          policies: f.policies,
+          divine_power: f.divinePower,
+          resources: f.resources,
+          is_ai: !f.deityId,
+          reputation: f.reputation,
+          specialization: f.specialization,
+          created_at_tick: f.createdAtTick,
+          specialization_unlock_available: f.specializationUnlockAvailable,
+        });
+      }
+    }
+
+    // 9. Update in-memory state
+    pendingSeason.status = 'active';
+    currentSeason = pendingSeason;
+    pendingSeason = null;
+
+    // Clear dominance tracking
+    dominanceStartTicks.clear();
+
+    console.log(`[Season] Successfully transitioned to ${currentSeason.name}`);
+    return { success: true, season: currentSeason };
+  } catch (error) {
+    console.error('[Season] Failed to transition to next season:', error);
+    return { success: false, error: 'Transition failed' };
+  }
+}
+
+/**
+ * Check if it's time to start a pending season
+ */
+export async function checkSeasonStart(state: GameState): Promise<void> {
+  if (!pendingSeason || pendingSeason.status !== 'pending') return;
+
+  const now = Date.now();
+  if (now >= pendingSeason.startedAt) {
+    // Time to start the season
+    const result = await transitionToNextSeason(state);
+    if (!result.success) {
+      console.warn(`[Season] Could not auto-start season: ${result.error}`);
+    }
+  }
+}
+
+/**
+ * Process season end and prepare next season
+ */
+export async function processSeasonEnd(state: GameState): Promise<void> {
+  if (!currentSeason || currentSeason.status !== 'ended') return;
+  if (pendingSeason) return; // Already preparing next season
+
+  if (!state.shardId) return;
+
+  // Prepare the next season
+  await prepareNextSeason(state.shardId, currentSeason);
 }

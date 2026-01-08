@@ -913,3 +913,62 @@ All tasks in "Moonshot: The Living World Archive - Phase 2 Core Feature" have be
 Total: 5/6 tasks complete (smooth interpolation deferred)
 
 ---
+
+## Implement Season Transition (Section 2.2)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/db/migrations/007_season_registration_schema.sql` — SQL schema for season_registrations table
+- `apps/server/src/db/types.ts` — Added DbSeasonRegistration types
+- `apps/server/src/db/repositories.ts` — Added seasonRegistrationRepo, updateByCoords, resetAll
+- `apps/server/src/systems/seasons.ts` — Added season transition functions
+- `packages/shared/src/index.ts` — Added SeasonRegistration, SeasonTransitionInfo types
+
+**Implementation Notes:**
+### New Database Schema
+- season_registrations table: deity_id, faction_name, faction_color, starting_position, status
+- Unique constraint: one registration per deity per season (excluding cancelled)
+- Added registration_opens_at, starts_at, max_players, min_players to seasons table
+
+### Season Transition Functions
+- `prepareNextSeason()`: Create pending season with registration period
+- `registerForSeason()`: Register a deity for an upcoming season
+- `cancelRegistration()`: Cancel a registration before season starts
+- `getSeasonTransitionInfo()`: Get UI-friendly transition state
+- `generateNewSeasonMap()`: Generate fresh hex map for new season
+- `resetFactionProgress()`: Clear all faction data while preserving deity cosmetics
+- `transitionToNextSeason()`: Full transition including map gen, faction creation
+- `checkSeasonStart()`: Auto-start season when registration period ends
+
+### Registration Constants
+- REGISTRATION_WINDOW_HOURS: 24 hours before season starts
+- REGISTRATION_MIN_PLAYERS: 2 minimum to start
+- REGISTRATION_MAX_PLAYERS: 8 maximum per shard
+
+### Transition Flow
+1. Season ends → prepareNextSeason() creates pending season
+2. Registration period opens for 24 hours
+3. Players register with faction name/color
+4. When start time arrives, transitionToNextSeason():
+   - Generates fresh hex map
+   - Resets all faction progress
+   - Creates factions for registered players
+   - Assigns optimal starting positions
+   - Persists new state to database
+   - Activates new season
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## SECTION 2.2 SEASON TRANSITION COMPLETE
+**Completed:** 2026-01-08
+
+All Season Transition tasks have been implemented:
+- Generate new map for next season (1/1)
+- Reset faction progress (1/1)
+- Allow early registration (1/1)
+
+Total: 3/3 tasks complete
+
+---
