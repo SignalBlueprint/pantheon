@@ -99,3 +99,38 @@ Successfully ran `pnpm --filter @pantheon/shared build` - TypeScript compiled wi
 Server starts successfully, health check returns `{"status":"ok","timestamp":...,"database":"not configured"}` when credentials are not set.
 
 ---
+
+## Define hex coordinate system
+**Completed:** 2026-01-08
+**Files Changed:**
+- `packages/shared/src/hex.ts` — created hex coordinate system module
+- `packages/shared/src/index.ts` — re-exported hex module
+
+**Implementation Notes:**
+Implemented complete hex grid system based on Red Blob Games hexagon guide:
+- HexCoord (axial q,r), CubeCoord, Point, HexLayout interfaces
+- `hexDistance()` - calculate distance between hexes in steps
+- `hexNeighbors()` - get all 6 neighboring coordinates
+- `hexToPixel()` - convert hex to pixel position
+- `pixelToHex()` - convert pixel to hex (with rounding)
+- `hexesInRadius()` - get all hexes within radius
+- `hexId()` / `parseHexId()` - unique string ID utilities
+- Support for both flat-top and pointy-top orientations
+
+**Verification:**
+Successfully ran `pnpm --filter @pantheon/shared build` - TypeScript compiled without errors.
+
+---
+
+## Create Territory type
+**Completed:** 2026-01-08
+**Files Changed:**
+- Already completed in Task 4 (packages/shared types)
+
+**Implementation Notes:**
+Territory type already includes all required fields: `{ id, q, r, owner, population, food, production }`.
+
+**Verification:**
+Type already exists and compiles correctly.
+
+---

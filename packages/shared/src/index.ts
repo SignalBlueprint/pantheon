@@ -1,5 +1,8 @@
 // Shared types, constants, and formulas for Pantheon
 
+// Re-export hex coordinate system
+export * from './hex.js';
+
 // Game constants
 export const TICK_RATE_MS = 1000; // World tick rate
 export const SIEGE_DURATION_HOURS = 24; // Minimum siege time
