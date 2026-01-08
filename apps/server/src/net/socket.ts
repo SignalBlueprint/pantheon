@@ -11,11 +11,22 @@ import {
   GameMessage,
   MessageType,
 } from '@pantheon/shared';
+import { castMiracle, MiracleCastResult } from '../systems/miracles.js';
 
 interface Client {
   ws: WebSocket;
   id: string;
+  factionId?: string; // Associated faction for this client
   connectedAt: number;
+}
+
+interface CastMiraclePayload {
+  miracleId: string;
+  targetId: string;
+}
+
+interface SelectFactionPayload {
+  factionId: string;
 }
 
 /**
@@ -26,10 +37,18 @@ export class GameSocketServer {
   private clients: Map<string, Client> = new Map();
   private clientIdCounter = 0;
   private previousState: SerializedGameState | null = null;
+  private gameState: GameState | null = null;
 
   constructor(wss: WebSocketServer) {
     this.wss = wss;
     this.setupHandlers();
+  }
+
+  /**
+   * Set the game state reference for miracle casting
+   */
+  setGameState(state: GameState): void {
+    this.gameState = state;
   }
 
   private setupHandlers(): void {
@@ -80,10 +99,73 @@ export class GameSocketServer {
         // Handle policy change requests
         break;
       case 'miracle':
-        // Handle miracle requests
+        // Handle miracle requests (legacy)
+        break;
+      case 'cast_miracle':
+        this.handleCastMiracle(client, message.payload as CastMiraclePayload);
+        break;
+      case 'select_faction':
+        // Associate client with a faction
+        const selectPayload = message.payload as SelectFactionPayload;
+        client.factionId = selectPayload.factionId;
+        console.log(`[Socket] Client ${client.id} selected faction: ${client.factionId}`);
         break;
       default:
         console.log(`[Socket] Unhandled message type: ${message.type}`);
+    }
+  }
+
+  /**
+   * Handle miracle cast request from client
+   */
+  private handleCastMiracle(client: Client, payload: CastMiraclePayload): void {
+    if (!this.gameState) {
+      this.sendToClient(client, {
+        type: 'miracle_result',
+        payload: { success: false, error: 'Game state not initialized' },
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    if (!client.factionId) {
+      this.sendToClient(client, {
+        type: 'miracle_result',
+        payload: { success: false, error: 'No faction selected' },
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    const { miracleId, targetId } = payload;
+
+    // Cast the miracle using the miracle system
+    const result: MiracleCastResult = castMiracle(
+      this.gameState,
+      client.factionId,
+      miracleId,
+      targetId
+    );
+
+    // Send result to the casting client
+    this.sendToClient(client, {
+      type: 'miracle_result',
+      payload: result,
+      timestamp: Date.now(),
+    });
+
+    // If successful, broadcast the miracle event to all clients
+    if (result.success) {
+      this.broadcast({
+        type: 'miracle_cast',
+        payload: {
+          factionId: client.factionId,
+          miracleId,
+          targetId,
+          effectId: result.effectId,
+        },
+        timestamp: Date.now(),
+      });
     }
   }
 
@@ -181,7 +263,8 @@ export class GameSocketServer {
       prev.owner !== curr.owner ||
       prev.population !== curr.population ||
       prev.food !== curr.food ||
-      prev.production !== curr.production
+      prev.production !== curr.production ||
+      prev.activeEffects.length !== curr.activeEffects.length
     );
   }
 
@@ -189,7 +272,8 @@ export class GameSocketServer {
     return (
       prev.territories.length !== curr.territories.length ||
       prev.resources.food !== curr.resources.food ||
-      prev.resources.production !== curr.resources.production
+      prev.resources.production !== curr.resources.production ||
+      prev.divinePower !== curr.divinePower
     );
   }
 

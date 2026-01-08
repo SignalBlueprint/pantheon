@@ -258,3 +258,57 @@ All tasks in "1.1 Single Shard Playable World" have been implemented:
 Total: 30/30 tasks complete
 
 ---
+
+## Implement Divine Intervention System (Section 1.2)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `packages/shared/src/index.ts` — added divine power constants, ActiveEffect type, BuildingType, updated Territory and Faction types, added new message types
+- `packages/shared/src/miracles.ts` — created miracle system with Miracle type and catalog (5 miracles)
+- `apps/server/src/world/mapgen.ts` — updated createTerritory to include buildings and activeEffects
+- `apps/server/src/world/faction.ts` — updated to include divinePower in faction creation
+- `apps/server/src/simulation/ticker.ts` — added divine power regeneration and effect expiration phases
+- `apps/server/src/systems/miracles.ts` — created miracle execution system with validation and effect application
+- `apps/server/src/net/socket.ts` — added cast_miracle and select_faction message handling, miracle broadcasting
+- `apps/web/src/components/ui/DivinePowerBar.tsx` — created divine power UI component
+- `apps/web/src/components/ui/MiraclePanel.tsx` — created miracle selection and casting UI
+- `apps/web/src/hooks/useGameSocket.ts` — added selectFaction, castMiracle, and miracle event callbacks
+
+**Implementation Notes:**
+### Divine Power
+- Added divinePower field to Faction (starts at 100, caps at 200)
+- Implemented divine power regeneration in ticker (+1 per tick per temple)
+- Created DivinePowerBar component showing current/max power
+
+### Miracle System
+- Defined Miracle type with cost, targetType, duration, cooldown, and effect modifiers
+- Created 5 miracles: Bountiful Harvest (30), Blessing of Valor (40), Divine Shield (50), Smite (60), Inspire (35)
+- Built miracle execution system with validation (cost, target validity)
+- Added active effects tracking on territories with expiration
+
+### Miracle UI
+- Created MiraclePanel with miracle selection and targeting mode
+- Shows miracle costs, affordability, and cooldown status
+- Targeting mode prompts user to click valid target on map
+
+### WebSocket Integration
+- Added CAST_MIRACLE message type with miracleId and targetId
+- Server validates and applies miracles, deducts divine power
+- Broadcasts miracle_cast events to all clients for visual feedback
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## HORIZON 1 SECTION 1.2 COMPLETE
+**Completed:** 2026-01-08
+
+All tasks in "1.2 Divine Intervention System" have been implemented:
+- Divine Power (3/3 tasks)
+- Miracle System (8/8 tasks)
+- Miracle UI (5/5 tasks)
+- WebSocket Integration (3/3 tasks)
+
+Total: 19/19 tasks complete
+
+---

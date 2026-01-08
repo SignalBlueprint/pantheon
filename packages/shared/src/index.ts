@@ -3,10 +3,18 @@
 // Re-export hex coordinate system
 export * from './hex.js';
 
+// Re-export miracle system
+export * from './miracles.js';
+
 // Game constants
 export const TICK_RATE_MS = 1000; // World tick rate
 export const SIEGE_DURATION_HOURS = 24; // Minimum siege time
 export const SEASON_DURATION_DAYS = 60; // ~2 months
+
+// Divine power constants
+export const DIVINE_POWER_START = 100;
+export const DIVINE_POWER_MAX = 200;
+export const DIVINE_POWER_REGEN_PER_TEMPLE = 1; // +1 per tick per temple
 
 // Resource types
 export type ResourceType = 'food' | 'production' | 'gold' | 'faith';
@@ -19,6 +27,22 @@ export interface Policy {
   resourceFocus: ResourceFocus; // what resource to prioritize
 }
 
+// Active effect on a territory (from miracles)
+export interface ActiveEffect {
+  id: string;
+  miracleId: string;
+  expiresTick: number;
+  modifier: {
+    foodMultiplier?: number;
+    productionMultiplier?: number;
+    defenseMultiplier?: number;
+    isShielded?: boolean;
+  };
+}
+
+// Building types for territories
+export type BuildingType = 'temple' | 'farm' | 'workshop' | 'fortress';
+
 // Territory type - uses axial hex coordinates (q, r)
 export interface Territory {
   id: string;
@@ -28,6 +52,8 @@ export interface Territory {
   population: number;
   food: number;
   production: number;
+  buildings: BuildingType[];  // buildings in this territory
+  activeEffects: ActiveEffect[];  // active miracle effects
 }
 
 // Faction types
@@ -44,6 +70,7 @@ export interface Faction {
     gold: number;
     faith: number;
   };
+  divinePower: number;  // starts at 100, caps at 200
 }
 
 // Battle type for pending combat resolution
@@ -82,6 +109,10 @@ export type MessageType =
   | 'battle_start'
   | 'battle_end'
   | 'miracle'
+  | 'cast_miracle'
+  | 'miracle_result'
+  | 'miracle_cast'
+  | 'select_faction'
   | 'policy_change';
 
 export interface GameMessage {

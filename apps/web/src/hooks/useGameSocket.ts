@@ -1,24 +1,42 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SerializedGameState, Territory, GameMessage } from '@pantheon/shared';
+import { SerializedGameState, Territory, Faction, GameMessage } from '@pantheon/shared';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
+
+export interface MiracleResult {
+  success: boolean;
+  error?: string;
+  effectId?: string;
+}
+
+export interface MiracleCastEvent {
+  factionId: string;
+  miracleId: string;
+  targetId: string;
+  effectId?: string;
+}
 
 interface UseGameSocketOptions {
   url?: string;
   autoConnect?: boolean;
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
+  onMiracleResult?: (result: MiracleResult) => void;
+  onMiracleCast?: (event: MiracleCastEvent) => void;
 }
 
 interface UseGameSocketReturn {
   gameState: SerializedGameState | null;
   status: ConnectionStatus;
   clientId: string | null;
+  factionId: string | null;
   connect: () => void;
   disconnect: () => void;
   sendMessage: (message: GameMessage) => void;
+  selectFaction: (factionId: string) => void;
+  castMiracle: (miracleId: string, targetId: string) => void;
 }
 
 const DEFAULT_URL = 'ws://localhost:3001';
@@ -34,11 +52,14 @@ export function useGameSocket(options: UseGameSocketOptions = {}): UseGameSocket
     autoConnect = true,
     reconnectInterval = DEFAULT_RECONNECT_INTERVAL,
     maxReconnectAttempts = MAX_RECONNECT_ATTEMPTS,
+    onMiracleResult,
+    onMiracleCast,
   } = options;
 
   const [gameState, setGameState] = useState<SerializedGameState | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [clientId, setClientId] = useState<string | null>(null);
+  const [factionId, setFactionId] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttemptsRef = useRef(0);
@@ -85,13 +106,21 @@ export function useGameSocket(options: UseGameSocketOptions = {}): UseGameSocket
           });
           break;
 
+        case 'miracle_result':
+          onMiracleResult?.(message.payload as MiracleResult);
+          break;
+
+        case 'miracle_cast':
+          onMiracleCast?.(message.payload as MiracleCastEvent);
+          break;
+
         default:
           console.log('[Socket] Unhandled message type:', message.type);
       }
     } catch (e) {
       console.error('[Socket] Failed to parse message:', e);
     }
-  }, []);
+  }, [onMiracleResult, onMiracleCast]);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -156,6 +185,25 @@ export function useGameSocket(options: UseGameSocketOptions = {}): UseGameSocket
     }
   }, []);
 
+  const selectFaction = useCallback((selectedFactionId: string) => {
+    setFactionId(selectedFactionId);
+    sendMessage({
+      type: 'select_faction',
+      payload: { factionId: selectedFactionId },
+      timestamp: Date.now(),
+    });
+    console.log('[Socket] Selected faction:', selectedFactionId);
+  }, [sendMessage]);
+
+  const castMiracle = useCallback((miracleId: string, targetId: string) => {
+    sendMessage({
+      type: 'cast_miracle',
+      payload: { miracleId, targetId },
+      timestamp: Date.now(),
+    });
+    console.log('[Socket] Casting miracle:', miracleId, 'on target:', targetId);
+  }, [sendMessage]);
+
   // Auto-connect on mount
   useEffect(() => {
     if (autoConnect) {
@@ -171,9 +219,12 @@ export function useGameSocket(options: UseGameSocketOptions = {}): UseGameSocket
     gameState,
     status,
     clientId,
+    factionId,
     connect,
     disconnect,
     sendMessage,
+    selectFaction,
+    castMiracle,
   };
 }
 

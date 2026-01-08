@@ -90,36 +90,36 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Divine Power
 
-- [ ] Add `divinePower` field to Faction — starts at 100, caps at 200
-- [ ] Implement divine power regeneration — +1 per tick per temple (territory with temple building)
-- [ ] Create divine power UI in `apps/web/src/components/ui/DivinePowerBar.tsx` — show current/max, regen rate
+- [x] Add `divinePower` field to Faction — starts at 100, caps at 200
+- [x] Implement divine power regeneration — +1 per tick per temple (territory with temple building)
+- [x] Create divine power UI in `apps/web/src/components/ui/DivinePowerBar.tsx` — show current/max, regen rate
 
 #### Miracle System
 
-- [ ] Define `Miracle` type in `packages/shared` — `{ id, name, cost, targetType: 'territory' | 'army' | 'faction', effect }`
-- [ ] Create miracle catalog in `packages/shared/src/miracles.ts`:
-  - [ ] "Bountiful Harvest" — cost 30, target territory, +50% food production for 10 ticks
-  - [ ] "Blessing of Valor" — cost 40, target army, +30% combat strength for next battle
-  - [ ] "Divine Shield" — cost 50, target territory, immune to capture for 20 ticks
-  - [ ] "Smite" — cost 60, target enemy army, deal 25% casualties instantly
-  - [ ] "Inspire" — cost 35, target territory, +100% production for 5 ticks
-- [ ] Create miracle execution in `apps/server/src/systems/miracles.ts` — validate cost, apply effect, deduct power
-- [ ] Add active effects tracking — `territory.activeEffects[]` with expiration tick
-- [ ] Process effect expiration in tick loop — remove effects when `currentTick >= effect.expiresTick`
+- [x] Define `Miracle` type in `packages/shared` — `{ id, name, cost, targetType: 'territory' | 'army' | 'faction', effect }`
+- [x] Create miracle catalog in `packages/shared/src/miracles.ts`:
+  - [x] "Bountiful Harvest" — cost 30, target territory, +50% food production for 10 ticks
+  - [x] "Blessing of Valor" — cost 40, target army, +30% combat strength for next battle
+  - [x] "Divine Shield" — cost 50, target territory, immune to capture for 20 ticks
+  - [x] "Smite" — cost 60, target enemy army, deal 25% casualties instantly
+  - [x] "Inspire" — cost 35, target territory, +100% production for 5 ticks
+- [x] Create miracle execution in `apps/server/src/systems/miracles.ts` — validate cost, apply effect, deduct power
+- [x] Add active effects tracking — `territory.activeEffects[]` with expiration tick
+- [x] Process effect expiration in tick loop — remove effects when `currentTick >= effect.expiresTick`
 
 #### Miracle UI
 
-- [ ] Create miracle panel in `apps/web/src/components/ui/MiraclePanel.tsx` — list available miracles with costs
-- [ ] Implement miracle targeting mode — click miracle, then click valid target on map
-- [ ] Add visual feedback for miracle cast — particle effect or flash on target territory
-- [ ] Show active effects on territory — icons or border glow indicating buffs/debuffs
-- [ ] Add cooldown display — show time until miracle can be cast again (if implementing cooldowns)
+- [x] Create miracle panel in `apps/web/src/components/ui/MiraclePanel.tsx` — list available miracles with costs
+- [x] Implement miracle targeting mode — click miracle, then click valid target on map
+- [x] Add visual feedback for miracle cast — particle effect or flash on target territory
+- [x] Show active effects on territory — icons or border glow indicating buffs/debuffs
+- [x] Add cooldown display — show time until miracle can be cast again (if implementing cooldowns)
 
 #### WebSocket Integration
 
-- [ ] Add `CAST_MIRACLE` message type — `{ miracleId, targetId }`
-- [ ] Validate miracle cast on server — check power, target validity, apply effect
-- [ ] Broadcast miracle events to all clients — show other players' miracles on the map
+- [x] Add `CAST_MIRACLE` message type — `{ miracleId, targetId }`
+- [x] Validate miracle cast on server — check power, target validity, apply effect
+- [x] Broadcast miracle events to all clients — show other players' miracles on the map
 
 **Acceptance Criteria:**
 - Divine power bar shows and updates in real-time

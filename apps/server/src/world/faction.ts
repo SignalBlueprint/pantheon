@@ -2,7 +2,7 @@
  * Faction factory and management for Pantheon
  */
 
-import { Faction, Policy, Territory, hexDistance, HexCoord } from '@pantheon/shared';
+import { Faction, Policy, Territory, hexDistance, HexCoord, DIVINE_POWER_START } from '@pantheon/shared';
 
 // Default policies for new factions
 const DEFAULT_POLICY: Policy = {
@@ -51,6 +51,7 @@ export function createFaction(
     policies: { ...DEFAULT_POLICY },
     territories: [startingTerritory.id],
     resources: { ...STARTING_RESOURCES },
+    divinePower: DIVINE_POWER_START,
   };
 
   return faction;

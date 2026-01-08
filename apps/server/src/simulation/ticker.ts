@@ -3,7 +3,7 @@
  * Manages the world tick cycle and dispatches to subsystems
  */
 
-import { GameState, Territory, Faction, TICK_RATE_MS } from '@pantheon/shared';
+import { GameState, Territory, Faction, TICK_RATE_MS, DIVINE_POWER_MAX, DIVINE_POWER_REGEN_PER_TEMPLE } from '@pantheon/shared';
 
 // Tick phase callbacks
 export type TickPhase = (state: GameState) => void;
@@ -63,33 +63,40 @@ export class Ticker {
 
   /**
    * Execute one tick of the game loop
-   * Phases: 1) Resource production, 2) Population growth, 3) AI decisions,
-   *         4) Combat resolution, 5) Broadcast state
+   * Phases: 1) Divine power regen, 2) Effect expiration, 3) Resource production,
+   *         4) Population growth, 5) AI decisions, 6) Combat resolution, 7) Broadcast state
    */
   tick(): void {
     this.state.tick++;
 
-    // Phase 1: Resource production
+    // Phase 1: Divine power regeneration
+    this.processDivinePowerRegen();
+
+    // Phase 2: Effect expiration
+    this.processEffectExpiration();
+
+    // Phase 3: Resource production
     this.config.onResourceProduction?.(this.state);
     this.processResourceProduction();
 
-    // Phase 2: Population growth
+    // Phase 4: Population growth
     this.config.onPopulationGrowth?.(this.state);
     this.processPopulationGrowth();
 
-    // Phase 3: AI decisions
+    // Phase 5: AI decisions
     this.config.onAIDecisions?.(this.state);
 
-    // Phase 4: Combat resolution
+    // Phase 6: Combat resolution
     this.config.onCombatResolution?.(this.state);
 
-    // Phase 5: Broadcast state
+    // Phase 7: Broadcast state
     this.config.onBroadcastState?.(this.state);
   }
 
   /**
    * Process resource production for all territories
    * Each territory generates food and production based on base values
+   * Active effects can modify production rates
    */
   private processResourceProduction(): void {
     for (const territory of this.state.territories.values()) {
@@ -98,9 +105,21 @@ export class Ticker {
       const faction = this.state.factions.get(territory.owner);
       if (!faction) continue;
 
-      // Base production rates (can be modified by terrain type later)
-      const foodProduced = Math.floor(territory.food * 0.1);
-      const productionProduced = Math.floor(territory.production * 0.1);
+      // Calculate effect multipliers
+      let foodMultiplier = 1;
+      let productionMultiplier = 1;
+      for (const effect of territory.activeEffects) {
+        if (effect.modifier.foodMultiplier) {
+          foodMultiplier *= effect.modifier.foodMultiplier;
+        }
+        if (effect.modifier.productionMultiplier) {
+          productionMultiplier *= effect.modifier.productionMultiplier;
+        }
+      }
+
+      // Base production rates with effect multipliers applied
+      const foodProduced = Math.floor(territory.food * 0.1 * foodMultiplier);
+      const productionProduced = Math.floor(territory.production * 0.1 * productionMultiplier);
 
       faction.resources.food += foodProduced;
       faction.resources.production += productionProduced;
@@ -137,6 +156,54 @@ export class Ticker {
         const shrink = Math.floor(deficit / FOOD_PER_POP);
         territory.population = Math.max(0, territory.population - shrink);
       }
+    }
+  }
+
+  /**
+   * Process divine power regeneration for all factions
+   * +1 divine power per tick per temple building
+   */
+  private processDivinePowerRegen(): void {
+    for (const faction of this.state.factions.values()) {
+      // Count temples in faction's territories
+      let templeCount = 0;
+      for (const territoryId of faction.territories) {
+        const territory = this.state.territories.get(territoryId);
+        if (territory && territory.buildings.includes('temple')) {
+          templeCount++;
+        }
+      }
+
+      // Base regeneration (minimum 1 even without temples)
+      const baseRegen = 1;
+      const templeRegen = templeCount * DIVINE_POWER_REGEN_PER_TEMPLE;
+      const totalRegen = baseRegen + templeRegen;
+
+      // Apply regeneration (cap at max)
+      faction.divinePower = Math.min(DIVINE_POWER_MAX, faction.divinePower + totalRegen);
+    }
+  }
+
+  /**
+   * Process expiration of active effects on territories
+   * Remove effects when currentTick >= effect.expiresTick
+   */
+  private processEffectExpiration(): void {
+    for (const territory of this.state.territories.values()) {
+      if (territory.activeEffects.length === 0) continue;
+
+      // Filter out expired effects
+      const activeEffects = territory.activeEffects.filter(
+        (effect) => effect.expiresTick > this.state.tick
+      );
+
+      // Log expired effects
+      const expiredCount = territory.activeEffects.length - activeEffects.length;
+      if (expiredCount > 0) {
+        console.log(`[Effects] ${expiredCount} effects expired on territory ${territory.id}`);
+      }
+
+      territory.activeEffects = activeEffects;
     }
   }
 

@@ -18,6 +18,8 @@ function generateDemoMap(): Territory[] {
     population: Math.floor(Math.random() * 100),
     food: Math.floor(Math.random() * 100),
     production: Math.floor(Math.random() * 50),
+    buildings: [],
+    activeEffects: [],
   }));
 }
 

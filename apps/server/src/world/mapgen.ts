@@ -43,6 +43,8 @@ function createTerritory(q: number, r: number): Territory {
     population: resources.population,
     food: resources.food,
     production: resources.production,
+    buildings: [],
+    activeEffects: [],
   };
 }
 
