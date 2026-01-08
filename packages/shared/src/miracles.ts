@@ -3,7 +3,7 @@
  */
 
 // Target types for miracles
-export type MiracleTargetType = 'territory' | 'army' | 'faction';
+export type MiracleTargetType = 'territory' | 'army' | 'faction' | 'champion';
 
 // Miracle definition
 export interface Miracle {
@@ -21,6 +21,8 @@ export interface Miracle {
     combatStrengthMultiplier?: number;
     isShielded?: boolean;
     instantDamagePercent?: number;
+    championStatBonus?: number;
+    championLifespanBonus?: number;
   };
 }
 
@@ -88,6 +90,20 @@ export const MIRACLES: Record<string, Miracle> = {
     cooldown: 15,
     effect: {
       productionMultiplier: 2.0,
+    },
+  },
+
+  bless_champion: {
+    id: 'bless_champion',
+    name: 'Bless Champion',
+    description: 'Grant divine blessing to a champion: +50% stats, +50% lifespan',
+    cost: 80,
+    targetType: 'champion',
+    duration: 0, // Permanent effect
+    cooldown: 100,
+    effect: {
+      championStatBonus: 0.5, // +50% stats
+      championLifespanBonus: 0.5, // +50% lifespan
     },
   },
 };

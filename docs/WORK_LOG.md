@@ -719,3 +719,77 @@ All tasks in "3.1 Emergent Mythology System" have been implemented:
 Total: 7/7 tasks complete
 
 ---
+
+## Implement Mortal Champions System (Section 3.2)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/db/migrations/005_champions_schema.sql` — SQL schema for champions and champion_names tables
+- `apps/server/src/db/types.ts` — Added DbChampion, DbChampionName, DbChampionInsert, DbChampionUpdate types
+- `apps/server/src/db/repositories.ts` — Added championRepo and championNameRepo
+- `apps/server/src/systems/champions.ts` — Complete champion service with spawning, aging, death, blessing
+- `apps/server/src/index.ts` — Added champion API endpoints and ticker integration
+- `apps/server/src/simulation/ticker.ts` — Added onChampionTick phase
+- `packages/shared/src/index.ts` — Added Champion, ChampionType, ChampionStats, ChampionDeathCause types and constants
+- `packages/shared/src/miracles.ts` — Added bless_champion miracle and champion target type
+- `apps/web/src/components/ui/ChampionPanel.tsx` — Champion panel UI with blessing and detail view
+
+**Implementation Notes:**
+### Database Schema
+- champions table: stores champions with faction, territory, stats, age, lifespan, battle history
+- champion_names table: weighted name pools for generation (first names, titles, epithets)
+- 30+ initial names seeded in migration across categories
+
+### Champion System
+- 1% spawn chance per tick per territory with 1000+ population
+- General champion type provides +25% combat bonus when leading army
+- Name generation with weighted random first name + optional title
+- Stats: combat (8-15), leadership (8-15), loyalty (70-100)
+- Base lifespan: ~1 hour (3600 ticks) with ±20% variance
+
+### Aging and Death
+- Age increments each tick
+- Natural death when age >= maxLifespan
+- Death causes: old_age, battle, execution, illness, assassination
+- Death triggers hero_death myth generation
+- Notifications for spawn, death, and blessing
+
+### Bless Champion Miracle
+- Cost: 80 divine power
+- Effect: +50% stats, +50% lifespan
+- Permanent blessing (not time-limited)
+- Added to miracles.ts with new champion target type
+
+### API Endpoints
+- GET `/api/champions/faction/:factionId` — Get champions for a faction
+- GET `/api/champions/:championId` — Get specific champion
+- POST `/api/champions/:championId/bless` — Bless a champion
+- POST `/api/champions/:championId/assign` — Assign champion to army
+
+### UI Components
+- ChampionPanel: Full champion list with status, stats, lifespan bars
+- ChampionCard: Individual champion display with quick actions
+- ChampionDetailModal: Detailed view with full stats, combat bonus info, battle record
+- Lifespan visualization with color-coded progress bars
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## HORIZON 3 SECTION 3.2 COMPLETE
+**Completed:** 2026-01-08
+
+All tasks in "3.2 Mortal Champions" have been implemented:
+- Define champions table (1/1)
+- Implement champion spawn logic (1/1)
+- Generate champion names (1/1)
+- Create General champion type (1/1)
+- Implement champion aging (1/1)
+- Add Bless Champion miracle (1/1)
+- Create champion death handling (1/1)
+- Build champion UI panel (1/1)
+- Add champion to army assignment (1/1)
+
+Total: 9/9 tasks complete
+
+---

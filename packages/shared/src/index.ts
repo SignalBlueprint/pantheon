@@ -185,7 +185,10 @@ export type NotificationType =
   | 'alliance_broken'
   | 'peace_accepted'
   | 'peace_rejected'
-  | 'truce_started';
+  | 'truce_started'
+  | 'champion_spawned'
+  | 'champion_died'
+  | 'champion_blessed';
 
 // Notification type for in-game alerts
 export interface Notification {
@@ -494,6 +497,76 @@ export interface MythTemplate {
 export const MYTH_BATTLE_CASUALTY_THRESHOLD = 100; // Casualties needed for great battle myth
 export const MYTH_DOMINANCE_THRESHOLD = 0.6; // 60% territory for dominance myth
 
+// ============== CHAMPION SYSTEM ==============
+
+// Champion constants
+export const CHAMPION_SPAWN_CHANCE = 0.01; // 1% per tick per territory
+export const CHAMPION_MIN_POPULATION = 1000; // Minimum territory population for spawn
+export const CHAMPION_BASE_LIFESPAN = 3600; // 1 hour in ticks
+export const CHAMPION_BLESS_COST = 80; // Divine power cost
+export const CHAMPION_BLESS_STAT_BONUS = 0.5; // +50% stats
+export const CHAMPION_BLESS_LIFESPAN_BONUS = 0.5; // +50% lifespan
+export const CHAMPION_GENERAL_COMBAT_BONUS = 0.25; // +25% combat strength when leading army
+
+// Champion types
+export type ChampionType = 'general';
+
+// Champion stats
+export interface ChampionStats {
+  combat: number;      // Combat effectiveness (affects battle strength)
+  leadership: number;  // Leadership ability (affects army morale)
+  loyalty: number;     // Loyalty to faction (0-100, affects defection chance)
+}
+
+// Death causes
+export type ChampionDeathCause = 'old_age' | 'battle' | 'execution' | 'illness' | 'assassination';
+
+// Champion interface
+export interface Champion {
+  id: string;
+  shardId: string;
+  factionId: string;
+  territoryId: string | null;
+  name: string;
+  type: ChampionType;
+  age: number;           // Current age in ticks
+  maxLifespan: number;   // Maximum lifespan in ticks
+  blessed: boolean;
+  blessedAt?: number;    // Tick when blessed
+  stats: ChampionStats;
+  assignedArmyId?: string;
+  kills: number;
+  battlesWon: number;
+  battlesFought: number;
+  isAlive: boolean;
+  deathTick?: number;
+  deathCause?: ChampionDeathCause;
+  createdAt: number;     // timestamp
+  createdAtTick: number;
+}
+
+// Champion spawn event
+export interface ChampionSpawnEvent {
+  championId: string;
+  factionId: string;
+  territoryId: string;
+  name: string;
+  type: ChampionType;
+  stats: ChampionStats;
+}
+
+// Champion death event
+export interface ChampionDeathEvent {
+  championId: string;
+  factionId: string;
+  name: string;
+  cause: ChampionDeathCause;
+  age: number;
+  wasBlessed: boolean;
+  kills: number;
+  battlesWon: number;
+}
+
 // GameState - the complete world state
 export interface GameState {
   tick: number;
@@ -552,7 +625,13 @@ export type MessageType =
   | 'use_specialization_ability'
   | 'myth_created'
   | 'get_myths'
-  | 'myth_shared';
+  | 'myth_shared'
+  | 'champion_spawned'
+  | 'champion_died'
+  | 'champion_blessed'
+  | 'bless_champion'
+  | 'assign_champion'
+  | 'get_champions';
 
 export interface GameMessage {
   type: MessageType;

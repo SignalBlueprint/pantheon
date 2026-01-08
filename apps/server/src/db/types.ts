@@ -252,7 +252,7 @@ export type DbSeasonUpdate = Partial<Omit<DbSeason, 'id' | 'shard_id' | 'created
 export type DbDominanceTrackingUpdate = Partial<Omit<DbDominanceTracking, 'id' | 'season_id' | 'faction_id' | 'created_at'>>;
 
 // Import myth types from shared
-import { MythEventType } from '@pantheon/shared';
+import { MythEventType, ChampionType, ChampionStats, ChampionDeathCause } from '@pantheon/shared';
 
 /**
  * Database row for myths table
@@ -290,3 +290,49 @@ export type DbMythTemplateInsert = Omit<DbMythTemplate, 'id' | 'created_at'>;
 
 // Update types for myth tables
 export type DbMythUpdate = Partial<Pick<DbMyth, 'is_notable' | 'views' | 'shares'>>;
+
+/**
+ * Database row for champions table
+ */
+export interface DbChampion {
+  id: string;
+  shard_id: string;
+  faction_id: string;
+  territory_id: string | null;
+  name: string;
+  type: ChampionType;
+  age: number;
+  max_lifespan: number;
+  blessed: boolean;
+  blessed_at: number | null;
+  stats: ChampionStats;
+  assigned_army_id: string | null;
+  kills: number;
+  battles_won: number;
+  battles_fought: number;
+  is_alive: boolean;
+  death_tick: number | null;
+  death_cause: ChampionDeathCause | null;
+  created_at: string;
+  created_at_tick: number;
+  updated_at: string;
+}
+
+/**
+ * Database row for champion_names table
+ */
+export interface DbChampionName {
+  id: string;
+  name: string;
+  name_type: 'first' | 'title' | 'epithet';
+  culture: string | null;
+  weight: number;
+  created_at: string;
+}
+
+// Insert types for champion tables
+export type DbChampionInsert = Omit<DbChampion, 'id' | 'created_at' | 'updated_at'>;
+export type DbChampionNameInsert = Omit<DbChampionName, 'id' | 'created_at'>;
+
+// Update types for champion tables
+export type DbChampionUpdate = Partial<Omit<DbChampion, 'id' | 'shard_id' | 'faction_id' | 'created_at' | 'created_at_tick' | 'updated_at'>>;

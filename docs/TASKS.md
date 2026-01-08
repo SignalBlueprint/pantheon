@@ -402,15 +402,15 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 **Tasks:**
 
-- [ ] Define `champions` table — `{ id, faction_id, name, type, stats, age, blessed, territory_id }`
-- [ ] Implement champion spawn logic — 1% chance per tick per territory with 1000+ population
-- [ ] Generate champion names — use name generator appropriate to faction culture
-- [ ] Create General champion type — leads army, provides combat bonus, can be assigned to armies
-- [ ] Implement champion aging — age increases each tick, death when age > lifespan
-- [ ] Add "Bless Champion" miracle — costs 80 divine power, +50% stats, +50% lifespan
-- [ ] Create champion death handling — generate myth, remove from game, notify deity
-- [ ] Build champion UI panel — list of faction's champions with stats and location
-- [ ] Add champion to army assignment — dropdown to attach champion to army
+- [x] Define `champions` table — `{ id, faction_id, name, type, stats, age, blessed, territory_id }`
+- [x] Implement champion spawn logic — 1% chance per tick per territory with 1000+ population
+- [x] Generate champion names — use name generator appropriate to faction culture
+- [x] Create General champion type — leads army, provides combat bonus, can be assigned to armies
+- [x] Implement champion aging — age increases each tick, death when age > lifespan
+- [x] Add "Bless Champion" miracle — costs 80 divine power, +50% stats, +50% lifespan
+- [x] Create champion death handling — generate myth, remove from game, notify deity
+- [x] Build champion UI panel — list of faction's champions with stats and location
+- [x] Add champion to army assignment — dropdown to attach champion to army
 
 **Acceptance Criteria:**
 - Champions spawn organically in successful factions

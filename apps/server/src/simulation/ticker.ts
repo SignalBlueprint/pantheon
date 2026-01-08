@@ -19,6 +19,7 @@ export interface TickerConfig {
   onCombatResolution?: TickPhase;
   onSiegeProgress?: TickPhase;
   onSpecializationTick?: TickPhase;
+  onChampionTick?: AsyncTickPhase;
   onSeasonTick?: AsyncTickPhase;
   onPersistence?: TickPhase;
   onBroadcastState?: TickPhase;
@@ -103,7 +104,15 @@ export class Ticker {
     // Phase 8: Specialization unlocks
     this.config.onSpecializationTick?.(this.state);
 
-    // Phase 9: Season tick (victory conditions, dominance tracking)
+    // Phase 9: Champion spawning and aging
+    // This is async but we don't wait for it to avoid blocking the tick loop
+    if (this.config.onChampionTick) {
+      this.config.onChampionTick(this.state).catch((error) => {
+        console.error('[Ticker] Champion tick error:', error);
+      });
+    }
+
+    // Phase 10: Season tick (victory conditions, dominance tracking)
     // This is async but we don't wait for it to avoid blocking the tick loop
     if (this.config.onSeasonTick) {
       this.config.onSeasonTick(this.state).catch((error) => {
@@ -111,10 +120,10 @@ export class Ticker {
       });
     }
 
-    // Phase 10: Persistence (save to database)
+    // Phase 11: Persistence (save to database)
     this.config.onPersistence?.(this.state);
 
-    // Phase 11: Broadcast state
+    // Phase 12: Broadcast state
     this.config.onBroadcastState?.(this.state);
   }
 

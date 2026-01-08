@@ -41,6 +41,10 @@ import {
   DbMythUpdate,
   DbMythTemplate,
   DbMythTemplateInsert,
+  DbChampion,
+  DbChampionInsert,
+  DbChampionUpdate,
+  DbChampionName,
 } from './types.js';
 
 /**
@@ -1039,5 +1043,210 @@ export const mythTemplateRepo = {
       .single();
     if (error) throw error;
     return data;
+  },
+};
+
+/**
+ * Champion repository
+ */
+export const championRepo = {
+  async getById(id: string): Promise<DbChampion | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('champions')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async getByFaction(factionId: string, aliveOnly = true): Promise<DbChampion[]> {
+    if (!supabase) return [];
+    let query = supabase
+      .from('champions')
+      .select('*')
+      .eq('faction_id', factionId);
+    if (aliveOnly) {
+      query = query.eq('is_alive', true);
+    }
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByShard(shardId: string, aliveOnly = true): Promise<DbChampion[]> {
+    if (!supabase) return [];
+    let query = supabase
+      .from('champions')
+      .select('*')
+      .eq('shard_id', shardId);
+    if (aliveOnly) {
+      query = query.eq('is_alive', true);
+    }
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByTerritory(territoryId: string): Promise<DbChampion[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('champions')
+      .select('*')
+      .eq('territory_id', territoryId)
+      .eq('is_alive', true);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getAliveCount(factionId: string): Promise<number> {
+    if (!supabase) return 0;
+    const { count, error } = await supabase
+      .from('champions')
+      .select('*', { count: 'exact', head: true })
+      .eq('faction_id', factionId)
+      .eq('is_alive', true);
+    if (error) throw error;
+    return count || 0;
+  },
+
+  async create(champion: DbChampionInsert): Promise<DbChampion> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('champions')
+      .insert(champion)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: DbChampionUpdate): Promise<DbChampion> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('champions')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async batchUpdate(updates: Array<{ id: string; data: DbChampionUpdate }>): Promise<void> {
+    if (!supabase || updates.length === 0) return;
+    const db = supabase;
+    await Promise.all(
+      updates.map(({ id, data }) =>
+        db.from('champions').update(data).eq('id', id)
+      )
+    );
+  },
+
+  async kill(id: string, tick: number, cause: string): Promise<DbChampion> {
+    return this.update(id, {
+      is_alive: false,
+      death_tick: tick,
+      death_cause: cause as DbChampion['death_cause'],
+    });
+  },
+
+  async bless(id: string, tick: number): Promise<DbChampion> {
+    const champion = await this.getById(id);
+    if (!champion) throw new Error('Champion not found');
+
+    // Calculate blessed stats (+50%)
+    const newStats = {
+      combat: Math.round(champion.stats.combat * 1.5),
+      leadership: Math.round(champion.stats.leadership * 1.5),
+      loyalty: Math.min(100, champion.stats.loyalty + 20),
+    };
+
+    // Calculate blessed lifespan (+50%)
+    const newMaxLifespan = Math.round(champion.max_lifespan * 1.5);
+
+    return this.update(id, {
+      blessed: true,
+      blessed_at: tick,
+      stats: newStats,
+      max_lifespan: newMaxLifespan,
+    });
+  },
+
+  async assignToArmy(id: string, armyId: string | null): Promise<DbChampion> {
+    return this.update(id, { assigned_army_id: armyId });
+  },
+
+  async incrementKills(id: string, kills: number): Promise<void> {
+    const champion = await this.getById(id);
+    if (champion) {
+      await this.update(id, { kills: champion.kills + kills });
+    }
+  },
+
+  async recordBattle(id: string, won: boolean): Promise<void> {
+    const champion = await this.getById(id);
+    if (champion) {
+      const updates: DbChampionUpdate = {
+        battles_fought: champion.battles_fought + 1,
+      };
+      if (won) {
+        updates.battles_won = champion.battles_won + 1;
+      }
+      await this.update(id, updates);
+    }
+  },
+};
+
+/**
+ * Champion names repository
+ */
+export const championNameRepo = {
+  async getByType(nameType: 'first' | 'title' | 'epithet'): Promise<DbChampionName[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('champion_names')
+      .select('*')
+      .eq('name_type', nameType);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByCulture(culture: string): Promise<DbChampionName[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('champion_names')
+      .select('*')
+      .eq('culture', culture);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getAll(): Promise<DbChampionName[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('champion_names')
+      .select('*');
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getRandomByType(nameType: 'first' | 'title' | 'epithet'): Promise<DbChampionName | null> {
+    if (!supabase) return null;
+    // Weighted random selection - fetch all and select
+    const names = await this.getByType(nameType);
+    if (names.length === 0) return null;
+
+    const totalWeight = names.reduce((sum, n) => sum + n.weight, 0);
+    let random = Math.random() * totalWeight;
+
+    for (const name of names) {
+      random -= name.weight;
+      if (random <= 0) {
+        return name;
+      }
+    }
+    return names[0];
   },
 };

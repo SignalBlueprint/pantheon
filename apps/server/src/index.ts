@@ -36,6 +36,15 @@ import {
   recordMythView,
   recordMythShare,
 } from './systems/myths.js';
+import {
+  processChampionSpawning,
+  processChampionAging,
+  getFactionChampions,
+  getChampionById,
+  blessChampion,
+  assignChampionToArmy,
+} from './systems/champions.js';
+import { CHAMPION_BLESS_COST } from '@pantheon/shared';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
@@ -329,6 +338,85 @@ app.post('/api/myths/:mythId/share', async (req, res) => {
   }
 });
 
+// Champion API endpoints
+
+// GET /api/champions/faction/:factionId - Get champions for a faction
+app.get('/api/champions/faction/:factionId', async (req, res) => {
+  const { factionId } = req.params;
+  const aliveOnly = req.query.aliveOnly !== 'false';
+
+  try {
+    const champions = await getFactionChampions(factionId, aliveOnly);
+    res.json({ champions });
+  } catch (error) {
+    console.error('[API] Error fetching faction champions:', error);
+    res.status(500).json({ error: 'Failed to fetch champions' });
+  }
+});
+
+// GET /api/champions/:championId - Get a specific champion
+app.get('/api/champions/:championId', async (req, res) => {
+  const { championId } = req.params;
+
+  try {
+    const champion = await getChampionById(championId);
+    if (!champion) {
+      return res.status(404).json({ error: 'Champion not found' });
+    }
+    res.json({ champion });
+  } catch (error) {
+    console.error('[API] Error fetching champion:', error);
+    res.status(500).json({ error: 'Failed to fetch champion' });
+  }
+});
+
+// POST /api/champions/:championId/bless - Bless a champion
+app.post('/api/champions/:championId/bless', async (req, res) => {
+  const { championId } = req.params;
+  const { factionId } = req.body;
+
+  if (!factionId) {
+    return res.status(400).json({ error: 'factionId required in request body' });
+  }
+
+  const faction = gameState.factions.get(factionId);
+  if (!faction) {
+    return res.status(404).json({ error: 'Faction not found' });
+  }
+
+  try {
+    const result = await blessChampion(gameState, faction, championId);
+    if (result.success) {
+      // Deduct divine power
+      faction.divinePower -= CHAMPION_BLESS_COST;
+      res.json({ success: true, champion: result.champion });
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('[API] Error blessing champion:', error);
+    res.status(500).json({ error: 'Failed to bless champion' });
+  }
+});
+
+// POST /api/champions/:championId/assign - Assign champion to army
+app.post('/api/champions/:championId/assign', async (req, res) => {
+  const { championId } = req.params;
+  const { armyId } = req.body; // armyId can be null to unassign
+
+  try {
+    const result = await assignChampionToArmy(championId, armyId ?? null);
+    if (result.success) {
+      res.json({ success: true });
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('[API] Error assigning champion:', error);
+    res.status(500).json({ error: 'Failed to assign champion' });
+  }
+});
+
 // Create HTTP server
 const server = createServer(app);
 
@@ -379,6 +467,11 @@ async function initializeServer(): Promise<void> {
       if (state.tick % 10 === 0) {
         processSpecializationTick(state);
       }
+    },
+    onChampionTick: async (state) => {
+      // Process champion spawning and aging
+      await processChampionSpawning(state);
+      await processChampionAging(state);
     },
     onSeasonTick: async (state) => {
       // Process season victory conditions and dominance tracking
