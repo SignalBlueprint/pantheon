@@ -1025,3 +1025,45 @@ All Specialization Implementation tasks have been completed:
 Total: 5/5 tasks complete (1 UI task deferred: display locked paths)
 
 ---
+
+## Display Locked Specialization Paths (Section 2.3 UI)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/web/src/components/ui/SpecializationIndicator.tsx` — Added locked paths display
+
+**Implementation Notes:**
+### New Props
+- Added `showLockedPaths?: boolean` prop to SpecializationIndicator
+
+### New Components
+- `LockedPathsSection`: Renders a section showing all specializations not chosen
+- `LockedSpecCard`: Expandable card for each locked specialization with:
+  - Grayed out styling with lock icon
+  - Grayscale specialization icon
+  - Expandable details showing missed bonuses, abilities, and buildings
+  - Line-through styling to emphasize unavailability
+
+### UI Design
+- Locked paths shown in a 3-column grid
+- Semi-transparent (opacity 60%) with hover state (80%)
+- Collapsible cards to save space
+- Clear "Paths Not Taken (Permanently Locked)" header
+- Missed items shown with line-through styling
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## SECTION 2.3 UI COMPLETE
+**Completed:** 2026-01-08
+
+All Section 2.3 UI for Specialization tasks have been completed:
+- Create specialization selection modal (1/1)
+- Add specialization indicator to faction panel (1/1)
+- Show specialization-specific buildings (1/1)
+- Display locked paths (1/1)
+
+Total: 4/4 tasks complete
+
+---

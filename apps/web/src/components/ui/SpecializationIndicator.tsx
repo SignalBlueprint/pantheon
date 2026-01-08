@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   SpecializationType,
   Specialization,
@@ -12,6 +13,7 @@ interface SpecializationIndicatorProps {
   onUnlockClick?: () => void;
   size?: 'small' | 'medium' | 'large';
   showDetails?: boolean;
+  showLockedPaths?: boolean;
 }
 
 /**
@@ -23,6 +25,7 @@ export function SpecializationIndicator({
   onUnlockClick,
   size = 'medium',
   showDetails = false,
+  showLockedPaths = false,
 }: SpecializationIndicatorProps) {
   // If no specialization and unlock is available
   if (!specialization && unlockAvailable) {
@@ -169,6 +172,11 @@ export function SpecializationIndicator({
             ))}
           </div>
         </div>
+
+        {/* Locked Paths - show other specializations that weren't chosen */}
+        {showLockedPaths && (
+          <LockedPathsSection currentSpecialization={specialization} />
+        )}
       </div>
     </div>
   );
@@ -248,6 +256,128 @@ function formatBuildingName(name: string): string {
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+/**
+ * Component showing locked specialization paths that weren't chosen
+ */
+function LockedPathsSection({
+  currentSpecialization,
+}: {
+  currentSpecialization: Exclude<SpecializationType, null>;
+}) {
+  // Get all other specializations that weren't chosen
+  const lockedSpecs = Object.values(SPECIALIZATIONS).filter(
+    (spec) => spec.id !== currentSpecialization
+  );
+
+  if (lockedSpecs.length === 0) return null;
+
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3 flex items-center gap-1">
+        <span>Paths Not Taken</span>
+        <span className="text-gray-400">(Permanently Locked)</span>
+      </h4>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        {lockedSpecs.map((spec) => (
+          <LockedSpecCard key={spec.id} spec={spec} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Card displaying a locked specialization that wasn't chosen
+ */
+function LockedSpecCard({ spec }: { spec: Specialization }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div
+      className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 overflow-hidden opacity-60 hover:opacity-80 transition-opacity"
+    >
+      {/* Header - always visible */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-3 py-2 flex items-center justify-between text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-gray-400">🔒</span>
+          <span className="text-lg grayscale">{spec.icon}</span>
+          <span className="font-medium text-gray-600 dark:text-gray-400 text-sm">
+            {spec.name}
+          </span>
+        </div>
+        <span className="text-gray-400 text-xs">
+          {isExpanded ? '▲' : '▼'}
+        </span>
+      </button>
+
+      {/* Expanded details */}
+      {isExpanded && (
+        <div className="px-3 pb-3 text-xs text-gray-500 dark:text-gray-400 space-y-2">
+          <p className="italic">{spec.description}</p>
+
+          {/* What you missed */}
+          <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+            <span className="font-medium text-gray-600 dark:text-gray-400">
+              Missed bonuses:
+            </span>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {Object.entries(spec.bonuses).map(([key, value]) => {
+                if (value === undefined) return null;
+                const label = formatBonusLabel(key, value);
+                if (!label) return null;
+                return (
+                  <span
+                    key={key}
+                    className="px-1.5 py-0.5 text-xs rounded bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through"
+                  >
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Missed abilities */}
+          <div>
+            <span className="font-medium text-gray-600 dark:text-gray-400">
+              Missed abilities:
+            </span>
+            <div className="mt-1 space-y-1">
+              {spec.abilities.map((ability) => (
+                <div key={ability.id} className="flex items-center gap-1 line-through">
+                  <span className="text-gray-400">{ability.isPassive ? '◆' : '◈'}</span>
+                  <span>{ability.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Missed buildings */}
+          <div>
+            <span className="font-medium text-gray-600 dark:text-gray-400">
+              Missed buildings:
+            </span>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {spec.uniqueBuildings.map((building) => (
+                <span
+                  key={building}
+                  className="px-1.5 py-0.5 text-xs rounded bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 line-through"
+                >
+                  {formatBuildingName(building)}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default SpecializationIndicator;

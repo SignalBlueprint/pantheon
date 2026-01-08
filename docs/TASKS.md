@@ -324,7 +324,7 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 - [x] Create specialization selection modal — appears when unlock triggered, shows all four paths
 - [x] Add specialization indicator to faction panel — icon and description of chosen path
 - [x] Show specialization-specific buildings — only available after path chosen
-- [ ] Display locked paths — show what you didn't choose, can't be changed
+- [x] Display locked paths — show what you didn't choose, can't be changed
 
 **New Infrastructure Required:**
 - `specialization` column on factions table
