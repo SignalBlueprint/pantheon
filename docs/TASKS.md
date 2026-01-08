@@ -365,13 +365,13 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 **Tasks:**
 
-- [ ] Define `myths` table — `{ id, faction_id, event_type, event_data, generated_text, tick_created }`
-- [ ] Create myth templates for each event type — "The [adjective] [noun] of [location], when [event description]"
-- [ ] Implement myth trigger detection — large battle (100+ casualties), miracle cast, etc.
-- [ ] Build myth generation service — select template, fill variables, save to database
-- [ ] Create temple view UI — scrollable list of faction's myths
-- [ ] Display myths to other players — visible when viewing rival faction's temples
-- [ ] Add myth sharing — players can share myths to external platforms
+- [x] Define `myths` table — `{ id, faction_id, event_type, event_data, generated_text, tick_created }`
+- [x] Create myth templates for each event type — "The [adjective] [noun] of [location], when [event description]"
+- [x] Implement myth trigger detection — large battle (100+ casualties), miracle cast, etc.
+- [x] Build myth generation service — select template, fill variables, save to database
+- [x] Create temple view UI — scrollable list of faction's myths
+- [x] Display myths to other players — visible when viewing rival faction's temples
+- [x] Add myth sharing — players can share myths to external platforms
 
 **Acceptance Criteria:**
 - At least 5 event types generate myths

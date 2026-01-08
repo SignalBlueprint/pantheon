@@ -652,3 +652,70 @@ Remaining tasks requiring deeper integration:
 - Display locked paths UI
 
 ---
+
+## Implement Emergent Mythology System (Section 3.1)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/db/migrations/004_myths_schema.sql` — SQL schema for myths and myth_templates tables with initial templates
+- `apps/server/src/db/types.ts` — Added DbMyth, DbMythTemplate, DbMythInsert, DbMythUpdate types
+- `apps/server/src/db/repositories.ts` — Added mythRepo and mythTemplateRepo for CRUD operations
+- `apps/server/src/systems/myths.ts` — Complete myth generation service with trigger detection
+- `apps/server/src/index.ts` — Added myth API endpoints
+- `packages/shared/src/index.ts` — Added MythEventType, Myth, MythTemplate types and constants
+- `apps/web/src/components/ui/TempleView.tsx` — Temple view UI for displaying faction myths
+
+**Implementation Notes:**
+### Database Schema
+- myths table: stores generated myths with faction, event type, text, title, views, shares
+- myth_templates table: configurable templates for each event type with weighted selection
+- 8 event types: great_battle, divine_intervention, hero_death, city_founding, betrayal, siege_victory, dominance_achieved, miracle_smite
+- Initial templates seeded in migration (2-3 per event type)
+
+### Myth Generation Service
+- Template-based generation with placeholder substitution
+- Weighted random template selection
+- Fallback templates if database not available
+- Adjective pools for dynamic variety (battle, positive, negative, terrain)
+- Notability detection for significant myths
+
+### Trigger Detection Functions
+- checkBattleMythTrigger(): 100+ casualty battles
+- checkMiracleMythTrigger(): Divine power cost >= 30
+- checkSiegeMythTrigger(): Successful siege completion
+- checkBetrayalMythTrigger(): Alliance breaking
+- checkDominanceMythTrigger(): 60% territory control
+- checkCityFoundingMythTrigger(): Every 5th territory claimed
+
+### API Endpoints
+- GET `/api/myths/faction/:factionId` — Get myths for a faction
+- GET `/api/myths/shard/:shardId` — Get all myths for a shard
+- GET `/api/myths/notable` — Get notable myths for current shard
+- POST `/api/myths/:mythId/view` — Record myth view
+- POST `/api/myths/:mythId/share` — Record myth share
+
+### UI Components
+- TempleView: Full temple interface with myth list, filtering by event type
+- MythCard: Individual myth display with icon, title, preview, stats
+- MythDetailModal: Full myth view with sharing capability
+- Event type filtering and notable myth highlighting
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## HORIZON 3 SECTION 3.1 COMPLETE
+**Completed:** 2026-01-08
+
+All tasks in "3.1 Emergent Mythology System" have been implemented:
+- Define myths table (1/1)
+- Create myth templates (1/1)
+- Implement myth trigger detection (1/1)
+- Build myth generation service (1/1)
+- Create temple view UI (1/1)
+- Display myths to other players (1/1)
+- Add myth sharing (1/1)
+
+Total: 7/7 tasks complete
+
+---

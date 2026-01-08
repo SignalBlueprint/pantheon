@@ -452,6 +452,48 @@ export function canUnlockSpecialization(
   return ticksSurvived >= SPECIALIZATION_UNLOCK_TICKS && territoryCount >= SPECIALIZATION_UNLOCK_TERRITORIES;
 }
 
+// ============== MYTHOLOGY SYSTEM ==============
+
+// Myth event types
+export type MythEventType =
+  | 'great_battle'
+  | 'divine_intervention'
+  | 'hero_death'
+  | 'city_founding'
+  | 'betrayal'
+  | 'siege_victory'
+  | 'dominance_achieved'
+  | 'miracle_smite';
+
+// Myth data interface
+export interface Myth {
+  id: string;
+  shardId: string;
+  factionId: string;
+  eventType: MythEventType;
+  eventData: Record<string, unknown>;
+  generatedText: string;
+  title: string;
+  tickCreated: number;
+  isNotable: boolean;
+  views: number;
+  shares: number;
+  createdAt: number;
+}
+
+// Myth template interface
+export interface MythTemplate {
+  id: string;
+  eventType: MythEventType;
+  templateText: string;
+  titleTemplate: string;
+  weight: number;
+}
+
+// Myth trigger thresholds
+export const MYTH_BATTLE_CASUALTY_THRESHOLD = 100; // Casualties needed for great battle myth
+export const MYTH_DOMINANCE_THRESHOLD = 0.6; // 60% territory for dominance myth
+
 // GameState - the complete world state
 export interface GameState {
   tick: number;
@@ -507,7 +549,10 @@ export type MessageType =
   | 'specialization_available'
   | 'choose_specialization'
   | 'specialization_chosen'
-  | 'use_specialization_ability';
+  | 'use_specialization_ability'
+  | 'myth_created'
+  | 'get_myths'
+  | 'myth_shared';
 
 export interface GameMessage {
   type: MessageType;

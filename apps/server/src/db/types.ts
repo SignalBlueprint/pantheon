@@ -250,3 +250,43 @@ export type DbDominanceTrackingInsert = Omit<DbDominanceTracking, 'id' | 'create
 // Update types for season tables
 export type DbSeasonUpdate = Partial<Omit<DbSeason, 'id' | 'shard_id' | 'created_at' | 'updated_at'>>;
 export type DbDominanceTrackingUpdate = Partial<Omit<DbDominanceTracking, 'id' | 'season_id' | 'faction_id' | 'created_at'>>;
+
+// Import myth types from shared
+import { MythEventType } from '@pantheon/shared';
+
+/**
+ * Database row for myths table
+ */
+export interface DbMyth {
+  id: string;
+  shard_id: string;
+  faction_id: string;
+  event_type: MythEventType;
+  event_data: Record<string, unknown>;
+  generated_text: string;
+  title: string;
+  tick_created: number;
+  is_notable: boolean;
+  views: number;
+  shares: number;
+  created_at: string;
+}
+
+/**
+ * Database row for myth_templates table
+ */
+export interface DbMythTemplate {
+  id: string;
+  event_type: MythEventType;
+  template_text: string;
+  title_template: string;
+  weight: number;
+  created_at: string;
+}
+
+// Insert types for myth tables
+export type DbMythInsert = Omit<DbMyth, 'id' | 'views' | 'shares' | 'created_at'>;
+export type DbMythTemplateInsert = Omit<DbMythTemplate, 'id' | 'created_at'>;
+
+// Update types for myth tables
+export type DbMythUpdate = Partial<Pick<DbMyth, 'is_notable' | 'views' | 'shares'>>;

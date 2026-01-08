@@ -29,6 +29,13 @@ import {
   processSeasonTick,
 } from './systems/seasons.js';
 import { processSpecializationTick } from './systems/specialization.js';
+import {
+  getFactionMyths,
+  getShardMyths,
+  getNotableMyths,
+  recordMythView,
+  recordMythShare,
+} from './systems/myths.js';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
@@ -245,6 +252,80 @@ app.get('/api/legacy/:deityId', async (req, res) => {
   } catch (error) {
     console.error('[API] Error fetching deity legacy:', error);
     res.status(500).json({ error: 'Failed to fetch deity legacy' });
+  }
+});
+
+// Mythology API endpoints
+
+// GET /api/myths/faction/:factionId - Get myths for a faction
+app.get('/api/myths/faction/:factionId', async (req, res) => {
+  const { factionId } = req.params;
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+
+  try {
+    const myths = await getFactionMyths(factionId, limit);
+    res.json({ myths });
+  } catch (error) {
+    console.error('[API] Error fetching faction myths:', error);
+    res.status(500).json({ error: 'Failed to fetch myths' });
+  }
+});
+
+// GET /api/myths/shard/:shardId - Get all myths for a shard
+app.get('/api/myths/shard/:shardId', async (req, res) => {
+  const { shardId } = req.params;
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+
+  try {
+    const myths = await getShardMyths(shardId, limit);
+    res.json({ myths });
+  } catch (error) {
+    console.error('[API] Error fetching shard myths:', error);
+    res.status(500).json({ error: 'Failed to fetch myths' });
+  }
+});
+
+// GET /api/myths/notable - Get notable myths for current shard
+app.get('/api/myths/notable', async (req, res) => {
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+  const shardId = gameState.shardId;
+
+  if (!shardId) {
+    return res.status(400).json({ error: 'No active shard' });
+  }
+
+  try {
+    const myths = await getNotableMyths(shardId, limit);
+    res.json({ myths });
+  } catch (error) {
+    console.error('[API] Error fetching notable myths:', error);
+    res.status(500).json({ error: 'Failed to fetch notable myths' });
+  }
+});
+
+// POST /api/myths/:mythId/view - Record a myth view
+app.post('/api/myths/:mythId/view', async (req, res) => {
+  const { mythId } = req.params;
+
+  try {
+    await recordMythView(mythId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[API] Error recording myth view:', error);
+    res.status(500).json({ error: 'Failed to record view' });
+  }
+});
+
+// POST /api/myths/:mythId/share - Record a myth share
+app.post('/api/myths/:mythId/share', async (req, res) => {
+  const { mythId } = req.params;
+
+  try {
+    await recordMythShare(mythId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[API] Error recording myth share:', error);
+    res.status(500).json({ error: 'Failed to record share' });
   }
 });
 

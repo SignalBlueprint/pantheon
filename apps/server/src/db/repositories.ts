@@ -36,6 +36,11 @@ import {
   DbDominanceTracking,
   DbDominanceTrackingInsert,
   DbDominanceTrackingUpdate,
+  DbMyth,
+  DbMythInsert,
+  DbMythUpdate,
+  DbMythTemplate,
+  DbMythTemplateInsert,
 } from './types.js';
 
 /**
@@ -903,5 +908,136 @@ export const dominanceTrackingRepo = {
       .eq('season_id', seasonId)
       .eq('is_active', true);
     if (error) throw error;
+  },
+};
+
+/**
+ * Myth repository
+ */
+export const mythRepo = {
+  async getByFaction(factionId: string, limit = 50): Promise<DbMyth[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('myths')
+      .select('*')
+      .eq('faction_id', factionId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByShard(shardId: string, limit = 100): Promise<DbMyth[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('myths')
+      .select('*')
+      .eq('shard_id', shardId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getNotable(shardId: string, limit = 20): Promise<DbMyth[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('myths')
+      .select('*')
+      .eq('shard_id', shardId)
+      .eq('is_notable', true)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getById(id: string): Promise<DbMyth | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('myths')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async create(myth: DbMythInsert): Promise<DbMyth> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('myths')
+      .insert(myth)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: DbMythUpdate): Promise<DbMyth> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('myths')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async incrementViews(id: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.rpc('increment_myth_views', { myth_id: id });
+    // Fall back to manual increment if RPC doesn't exist
+    if (error) {
+      const myth = await this.getById(id);
+      if (myth) {
+        await this.update(id, { views: myth.views + 1 });
+      }
+    }
+  },
+
+  async incrementShares(id: string): Promise<void> {
+    if (!supabase) return;
+    const myth = await this.getById(id);
+    if (myth) {
+      await this.update(id, { shares: myth.shares + 1 });
+    }
+  },
+};
+
+/**
+ * Myth template repository
+ */
+export const mythTemplateRepo = {
+  async getByEventType(eventType: string): Promise<DbMythTemplate[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('myth_templates')
+      .select('*')
+      .eq('event_type', eventType);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getAll(): Promise<DbMythTemplate[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('myth_templates')
+      .select('*');
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(template: DbMythTemplateInsert): Promise<DbMythTemplate> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('myth_templates')
+      .insert(template)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 };
