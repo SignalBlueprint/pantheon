@@ -151,3 +151,24 @@ Type already exists and compiles correctly.
 Successfully ran `pnpm --filter @pantheon/server build` - TypeScript compiled without errors.
 
 ---
+
+## Create React hex renderer with pan/zoom and click handler
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/web/src/components/map/HexGrid.tsx` — created SVG hex renderer with pan/zoom
+- `apps/web/src/components/map/GameMap.tsx` — created demo wrapper with territory panel
+- `apps/web/src/app/page.tsx` — integrated GameMap component
+
+**Implementation Notes:**
+Combined Tasks 9, 10, 11 into single implementation:
+- SVG-based hex renderer with faction colors
+- Mouse drag to pan, scroll wheel to zoom (0.5x to 3x)
+- Pan clamped to map bounds
+- Click handler shows territory detail panel with stats
+- Demo generates 61-hex map with random faction ownership
+- Territory panel shows position, owner, population, food, production
+
+**Verification:**
+Successfully ran `pnpm --filter @pantheon/web build` - compiled and generated static pages without errors.
+
+---

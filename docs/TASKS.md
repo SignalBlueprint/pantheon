@@ -36,14 +36,14 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 - [x] Define hex coordinate system in `packages/shared/src/hex.ts` — use axial coordinates (q, r), implement `hexDistance()`, `hexNeighbors()`, `hexToPixel()`, `pixelToHex()`
 - [x] Create `Territory` type — `{ id, q, r, owner: factionId | null, population, food, production }`
 - [x] Build hex map generator in `apps/server/src/world/mapgen.ts` — generate 61-hex map (radius 4), assign random starting resources
-- [ ] Create React hex renderer in `apps/web/src/components/map/HexGrid.tsx` — render hexes using Canvas or SVG, color by faction owner
-- [ ] Implement pan and zoom on hex map — mouse drag to pan, scroll to zoom, clamp to map bounds
-- [ ] Add territory click handler — clicking hex shows territory detail panel with stats
+- [x] Create React hex renderer in `apps/web/src/components/map/HexGrid.tsx` — render hexes using Canvas or SVG, color by faction owner
+- [x] Implement pan and zoom on hex map — mouse drag to pan, scroll to zoom, clamp to map bounds
+- [x] Add territory click handler — clicking hex shows territory detail panel with stats
 
 #### Faction System
 
-- [ ] Define `Faction` type in `packages/shared` — `{ id, name, color, deityId, policies, territories[], resources }`
-- [ ] Define `Policy` type — `{ expansion: 0-100, aggression: 0-100, resourceFocus: 'food' | 'production' | 'balanced' }`
+- [x] Define `Faction` type in `packages/shared` — `{ id, name, color, deityId, policies, territories[], resources }`
+- [x] Define `Policy` type — `{ expansion: 0-100, aggression: 0-100, resourceFocus: 'food' | 'production' | 'balanced' }`
 - [ ] Create faction factory in `apps/server/src/world/faction.ts` — `createFaction(name, color, startingTerritory)`
 - [ ] Implement starting position selection — place factions at maximum distance from each other on map
 
