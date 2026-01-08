@@ -432,11 +432,11 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 **Goal:** Record all game events in replayable format.
 
-- [ ] Design event log schema — `{ tick, event_type, data, shard_id }`
-- [ ] Implement event recording — log all state changes (territory capture, battle, miracle, etc.)
-- [ ] Create event compression — batch events, compress for storage
-- [ ] Estimate storage requirements — calculate bytes per tick, project season cost
-- [ ] Set up archive storage — S3 or Supabase Storage for completed seasons
+- [x] Design event log schema — `{ tick, event_type, data, shard_id }`
+- [x] Implement event recording — log all state changes (territory capture, battle, miracle, etc.)
+- [x] Create event compression — batch events, compress for storage
+- [x] Estimate storage requirements — calculate bytes per tick, project season cost
+- [x] Set up archive storage — S3 or Supabase Storage for completed seasons
 
 **Estimated Effort:** 12-16 hours
 

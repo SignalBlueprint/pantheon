@@ -567,6 +567,102 @@ export interface ChampionDeathEvent {
   battlesWon: number;
 }
 
+// ============== EVENT LOG SYSTEM ==============
+
+// Game event types for replay system
+export type GameEventType =
+  | 'tick_start'
+  | 'territory_claimed'
+  | 'territory_lost'
+  | 'territory_captured'
+  | 'faction_created'
+  | 'faction_eliminated'
+  | 'siege_started'
+  | 'siege_progress'
+  | 'siege_completed'
+  | 'siege_broken'
+  | 'siege_abandoned'
+  | 'battle_started'
+  | 'battle_resolved'
+  | 'miracle_cast'
+  | 'miracle_effect_expired'
+  | 'divine_power_changed'
+  | 'resources_changed'
+  | 'population_changed'
+  | 'war_declared'
+  | 'peace_offered'
+  | 'peace_accepted'
+  | 'peace_rejected'
+  | 'alliance_proposed'
+  | 'alliance_formed'
+  | 'alliance_broken'
+  | 'truce_started'
+  | 'truce_ended'
+  | 'champion_spawned'
+  | 'champion_died'
+  | 'champion_blessed'
+  | 'champion_assigned'
+  | 'specialization_unlocked'
+  | 'specialization_chosen'
+  | 'myth_created'
+  | 'dominance_started'
+  | 'dominance_lost'
+  | 'season_started'
+  | 'season_ended'
+  | 'custom';
+
+// Subject/target types for events
+export type EventEntityType = 'faction' | 'territory' | 'champion' | 'siege' | 'myth' | 'season' | 'army';
+
+// Game event for replay
+export interface GameEvent {
+  id: string;
+  shardId: string;
+  tick: number;
+  eventType: GameEventType;
+  subjectType?: EventEntityType;
+  subjectId?: string;
+  targetType?: EventEntityType;
+  targetId?: string;
+  data: Record<string, unknown>;
+  createdAt: number;
+}
+
+// Event batch for compressed storage
+export interface EventBatch {
+  id: string;
+  shardId: string;
+  startTick: number;
+  endTick: number;
+  eventCount: number;
+  compressedData: Uint8Array;
+  uncompressedSize: number;
+  compressedSize: number;
+  compressionRatio: number;
+  createdAt: number;
+}
+
+// Replay archive metadata
+export interface ReplayArchive {
+  id: string;
+  seasonId: string;
+  shardId: string;
+  totalTicks: number;
+  totalEvents: number;
+  totalBatches: number;
+  uncompressedSizeBytes: number;
+  compressedSizeBytes: number;
+  storageType: 'database' | 's3' | 'supabase_storage';
+  storagePath?: string;
+  highlightTicks: number[];
+  status: 'active' | 'archived' | 'deleted';
+  createdAt: number;
+}
+
+// Event recording config
+export const EVENT_LOG_BATCH_SIZE = 1000; // Events per batch before compression
+export const EVENT_LOG_BATCH_TICKS = 3600; // Batch every hour of ticks
+
 // GameState - the complete world state
 export interface GameState {
   tick: number;

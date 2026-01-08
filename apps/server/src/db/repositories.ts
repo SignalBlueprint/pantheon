@@ -45,6 +45,13 @@ import {
   DbChampionInsert,
   DbChampionUpdate,
   DbChampionName,
+  DbEventLog,
+  DbEventLogInsert,
+  DbEventBatch,
+  DbEventBatchInsert,
+  DbReplayArchive,
+  DbReplayArchiveInsert,
+  DbReplayArchiveUpdate,
 } from './types.js';
 
 /**
@@ -1248,5 +1255,209 @@ export const championNameRepo = {
       }
     }
     return names[0];
+  },
+};
+
+/**
+ * Event log repository
+ */
+export const eventLogRepo = {
+  async getByTickRange(shardId: string, startTick: number, endTick: number): Promise<DbEventLog[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('event_log')
+      .select('*')
+      .eq('shard_id', shardId)
+      .gte('tick', startTick)
+      .lte('tick', endTick)
+      .order('tick', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByTick(shardId: string, tick: number): Promise<DbEventLog[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('event_log')
+      .select('*')
+      .eq('shard_id', shardId)
+      .eq('tick', tick)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(event: DbEventLogInsert): Promise<DbEventLog> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('event_log')
+      .insert(event)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async batchCreate(events: DbEventLogInsert[]): Promise<DbEventLog[]> {
+    if (!supabase || events.length === 0) return [];
+    const { data, error } = await supabase
+      .from('event_log')
+      .insert(events)
+      .select();
+    if (error) throw error;
+    return data || [];
+  },
+
+  async deleteBeforeTick(shardId: string, beforeTick: number): Promise<number> {
+    if (!supabase) return 0;
+    const { error, count } = await supabase
+      .from('event_log')
+      .delete({ count: 'exact' })
+      .eq('shard_id', shardId)
+      .lt('tick', beforeTick);
+    if (error) throw error;
+    return count || 0;
+  },
+
+  async getCount(shardId: string): Promise<number> {
+    if (!supabase) return 0;
+    const { count, error } = await supabase
+      .from('event_log')
+      .select('*', { count: 'exact', head: true })
+      .eq('shard_id', shardId);
+    if (error) throw error;
+    return count || 0;
+  },
+
+  async getLatestTick(shardId: string): Promise<number> {
+    if (!supabase) return 0;
+    const { data, error } = await supabase
+      .from('event_log')
+      .select('tick')
+      .eq('shard_id', shardId)
+      .order('tick', { ascending: false })
+      .limit(1)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data?.tick || 0;
+  },
+};
+
+/**
+ * Event batch repository
+ */
+export const eventBatchRepo = {
+  async getByTickRange(shardId: string, startTick: number, endTick: number): Promise<DbEventBatch[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('event_batches')
+      .select('*')
+      .eq('shard_id', shardId)
+      .or(`and(start_tick.gte.${startTick},start_tick.lte.${endTick}),and(end_tick.gte.${startTick},end_tick.lte.${endTick})`)
+      .order('start_tick', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByShard(shardId: string): Promise<DbEventBatch[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('event_batches')
+      .select('*')
+      .eq('shard_id', shardId)
+      .order('start_tick', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(batch: DbEventBatchInsert): Promise<DbEventBatch> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('event_batches')
+      .insert(batch)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async getTotalSize(shardId: string): Promise<{ uncompressed: number; compressed: number }> {
+    if (!supabase) return { uncompressed: 0, compressed: 0 };
+    const { data, error } = await supabase
+      .from('event_batches')
+      .select('uncompressed_size, compressed_size')
+      .eq('shard_id', shardId);
+    if (error) throw error;
+
+    const totals = (data || []).reduce(
+      (acc, batch) => ({
+        uncompressed: acc.uncompressed + batch.uncompressed_size,
+        compressed: acc.compressed + batch.compressed_size,
+      }),
+      { uncompressed: 0, compressed: 0 }
+    );
+    return totals;
+  },
+};
+
+/**
+ * Replay archive repository
+ */
+export const replayArchiveRepo = {
+  async getById(id: string): Promise<DbReplayArchive | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('replay_archives')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async getBySeason(seasonId: string): Promise<DbReplayArchive | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('replay_archives')
+      .select('*')
+      .eq('season_id', seasonId)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async getByShard(shardId: string): Promise<DbReplayArchive[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('replay_archives')
+      .select('*')
+      .eq('shard_id', shardId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(archive: DbReplayArchiveInsert): Promise<DbReplayArchive> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('replay_archives')
+      .insert(archive)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: DbReplayArchiveUpdate): Promise<DbReplayArchive> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('replay_archives')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 };

@@ -336,3 +336,65 @@ export type DbChampionNameInsert = Omit<DbChampionName, 'id' | 'created_at'>;
 
 // Update types for champion tables
 export type DbChampionUpdate = Partial<Omit<DbChampion, 'id' | 'shard_id' | 'faction_id' | 'created_at' | 'created_at_tick' | 'updated_at'>>;
+
+// Import event types from shared
+import { GameEventType, EventEntityType } from '@pantheon/shared';
+
+/**
+ * Database row for event_log table
+ */
+export interface DbEventLog {
+  id: string;
+  shard_id: string;
+  tick: number;
+  event_type: GameEventType;
+  subject_type: EventEntityType | null;
+  subject_id: string | null;
+  target_type: EventEntityType | null;
+  target_id: string | null;
+  data: Record<string, unknown>;
+  created_at: string;
+}
+
+/**
+ * Database row for event_batches table
+ */
+export interface DbEventBatch {
+  id: string;
+  shard_id: string;
+  start_tick: number;
+  end_tick: number;
+  event_count: number;
+  compressed_data: Buffer;
+  uncompressed_size: number;
+  compressed_size: number;
+  compression_ratio: number;
+  created_at: string;
+}
+
+/**
+ * Database row for replay_archives table
+ */
+export interface DbReplayArchive {
+  id: string;
+  season_id: string;
+  shard_id: string;
+  total_ticks: number;
+  total_events: number;
+  total_batches: number;
+  uncompressed_size_bytes: number;
+  compressed_size_bytes: number;
+  storage_type: 'database' | 's3' | 'supabase_storage';
+  storage_path: string | null;
+  highlight_ticks: number[];
+  status: 'active' | 'archived' | 'deleted';
+  created_at: string;
+}
+
+// Insert types for event tables
+export type DbEventLogInsert = Omit<DbEventLog, 'id' | 'created_at'>;
+export type DbEventBatchInsert = Omit<DbEventBatch, 'id' | 'created_at'>;
+export type DbReplayArchiveInsert = Omit<DbReplayArchive, 'id' | 'created_at'>;
+
+// Update types for event tables
+export type DbReplayArchiveUpdate = Partial<Pick<DbReplayArchive, 'status' | 'highlight_ticks' | 'storage_path'>>;
