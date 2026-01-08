@@ -28,6 +28,7 @@ import {
   getDeityLegacy,
   processSeasonTick,
 } from './systems/seasons.js';
+import { processSpecializationTick } from './systems/specialization.js';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
@@ -292,6 +293,12 @@ async function initializeServer(): Promise<void> {
 
   // Create and configure ticker
   ticker = new Ticker(gameState, {
+    onSpecializationTick: (state) => {
+      // Check for specialization unlocks (every 10 ticks to reduce overhead)
+      if (state.tick % 10 === 0) {
+        processSpecializationTick(state);
+      }
+    },
     onSeasonTick: async (state) => {
       // Process season victory conditions and dominance tracking
       await processSeasonTick(state);

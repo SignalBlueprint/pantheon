@@ -24,6 +24,7 @@ import {
   DiplomacyResult,
 } from '../systems/diplomacy.js';
 import { sendMessage, SendMessageResult } from '../systems/messages.js';
+import { chooseSpecialization, ChooseSpecializationResult } from '../systems/specialization.js';
 
 interface Client {
   ws: WebSocket;
@@ -66,6 +67,10 @@ interface RespondProposalPayload {
 interface SendMessagePayload {
   receiverId: string;
   content: string;
+}
+
+interface ChooseSpecializationPayload {
+  specializationType: 'maritime' | 'fortress' | 'plains' | 'nomadic';
 }
 
 /**
@@ -166,6 +171,9 @@ export class GameSocketServer {
         break;
       case 'send_message':
         this.handleSendMessage(client, message.payload as SendMessagePayload);
+        break;
+      case 'choose_specialization':
+        this.handleChooseSpecialization(client, message.payload as ChooseSpecializationPayload);
         break;
       default:
         console.log(`[Socket] Unhandled message type: ${message.type}`);
@@ -350,6 +358,61 @@ export class GameSocketServer {
       this.sendToFaction(payload.receiverId, {
         type: 'send_message',
         payload: { received: true, message: result.message },
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  /**
+   * Handle specialization choice request from client
+   */
+  private handleChooseSpecialization(client: Client, payload: ChooseSpecializationPayload): void {
+    if (!this.gameState) {
+      this.sendToClient(client, {
+        type: 'specialization_chosen',
+        payload: { success: false, error: 'Game state not initialized' },
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    if (!client.factionId) {
+      this.sendToClient(client, {
+        type: 'specialization_chosen',
+        payload: { success: false, error: 'No faction selected' },
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    const faction = this.gameState.factions.get(client.factionId);
+    if (!faction) {
+      this.sendToClient(client, {
+        type: 'specialization_chosen',
+        payload: { success: false, error: 'Faction not found' },
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    const result = chooseSpecialization(faction, payload.specializationType);
+
+    // Send result to the client
+    this.sendToClient(client, {
+      type: 'specialization_chosen',
+      payload: result,
+      timestamp: Date.now(),
+    });
+
+    // If successful, broadcast the choice to all clients
+    if (result.success) {
+      this.broadcast({
+        type: 'specialization_chosen',
+        payload: {
+          factionId: faction.id,
+          factionName: faction.name,
+          specialization: result.specialization,
+        },
         timestamp: Date.now(),
       });
     }

@@ -308,6 +308,9 @@ export async function loadGameState(shardId: string): Promise<GameState | null> 
         resources: f.resources,
         divinePower: f.divine_power,
         reputation: f.reputation ?? 50, // Default to 50 if not set
+        specialization: f.specialization ?? null,
+        createdAtTick: f.created_at_tick ?? 0,
+        specializationUnlockAvailable: f.specialization_unlock_available ?? false,
       });
     }
 
@@ -420,6 +423,9 @@ export async function createNewShard(
         resources: f.resources,
         is_ai: !f.deityId,
         reputation: f.reputation ?? 50,
+        specialization: f.specialization ?? null,
+        created_at_tick: f.createdAtTick ?? 0,
+        specialization_unlock_available: f.specializationUnlockAvailable ?? false,
       });
     }
 

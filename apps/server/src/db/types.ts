@@ -3,7 +3,7 @@
  * These mirror the SQL schema in migrations/001_initial_schema.sql
  */
 
-import { Policy, ResourceFocus, BuildingType, ActiveEffect, RelationStatus, ProposalType, DiplomaticEventType, DiplomaticMessageType, NotificationType } from '@pantheon/shared';
+import { Policy, ResourceFocus, BuildingType, ActiveEffect, RelationStatus, ProposalType, DiplomaticEventType, DiplomaticMessageType, NotificationType, SpecializationType } from '@pantheon/shared';
 
 // Shard status enum
 export type ShardStatus = 'active' | 'paused' | 'ended' | 'archived';
@@ -45,6 +45,9 @@ export interface DbFaction {
   };
   is_ai: boolean;
   reputation: number;
+  specialization: SpecializationType;
+  created_at_tick: number;
+  specialization_unlock_available: boolean;
   created_at: string;
   updated_at: string;
 }

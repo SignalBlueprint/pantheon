@@ -84,6 +84,9 @@ export interface Faction {
   };
   divinePower: number;  // starts at 100, caps at 200
   reputation: number;   // 0-100, affects diplomatic interactions
+  specialization: SpecializationType;  // null until unlocked
+  createdAtTick: number;  // tick when faction was created (for unlock tracking)
+  specializationUnlockAvailable: boolean;  // true when can choose specialization
 }
 
 // Battle type for pending combat resolution
@@ -274,6 +277,181 @@ export interface DominanceTracking {
   isActive: boolean;
 }
 
+// ============== SPECIALIZATION SYSTEM ==============
+
+// Specialization constants
+export const SPECIALIZATION_UNLOCK_TICKS = 100; // Survive 100 ticks
+export const SPECIALIZATION_UNLOCK_TERRITORIES = 5; // Control 5+ territories
+
+// Specialization types
+export type SpecializationType = 'maritime' | 'fortress' | 'plains' | 'nomadic' | null;
+
+// Specialization bonus modifiers
+export interface SpecializationBonuses {
+  defenseMultiplier?: number;
+  populationCapMultiplier?: number;
+  movementSpeedMultiplier?: number;
+  foodProductionMultiplier?: number;
+  productionMultiplier?: number;
+  navalCombatBonus?: number;
+  miningBonus?: number;
+  tradeBonus?: number;
+  raidDamageMultiplier?: number;
+  canBuildShips?: boolean;
+  canSettleIslands?: boolean;
+  canRaidWithoutSiege?: boolean;
+  useCampsInsteadOfCities?: boolean;
+}
+
+// Unique ability definition
+export interface SpecializationAbility {
+  id: string;
+  name: string;
+  description: string;
+  cost?: number; // Divine power cost if active ability
+  cooldownTicks?: number;
+  isPassive: boolean;
+}
+
+// Specialization definition
+export interface Specialization {
+  id: SpecializationType;
+  name: string;
+  description: string;
+  icon: string;
+  bonuses: SpecializationBonuses;
+  abilities: SpecializationAbility[];
+  uniqueBuildings: string[];
+}
+
+// Four specialization paths
+export const SPECIALIZATIONS: Record<Exclude<SpecializationType, null>, Specialization> = {
+  maritime: {
+    id: 'maritime',
+    name: 'Maritime Dominion',
+    description: 'Masters of the seas. Coastal territories produce ships, can settle islands, and excel in naval combat.',
+    icon: '⚓',
+    bonuses: {
+      navalCombatBonus: 0.3, // +30% naval combat
+      canBuildShips: true,
+      canSettleIslands: true,
+      tradeBonus: 0.2, // +20% trade income
+    },
+    abilities: [
+      {
+        id: 'shipyard',
+        name: 'Shipyard',
+        description: 'Coastal territories can build ships for naval transport and combat.',
+        isPassive: true,
+      },
+      {
+        id: 'naval_assault',
+        name: 'Naval Assault',
+        description: 'Launch surprise attack from the sea, bypassing coastal defenses.',
+        cost: 40,
+        cooldownTicks: 3600,
+        isPassive: false,
+      },
+    ],
+    uniqueBuildings: ['shipyard', 'lighthouse', 'harbor'],
+  },
+  fortress: {
+    id: 'fortress',
+    name: 'Mountain Fortress',
+    description: 'Impregnable defenders. Mountain territories have massive defense bonuses and mines produce rare resources.',
+    icon: '🏔️',
+    bonuses: {
+      defenseMultiplier: 1.5, // +50% defense in mountains
+      miningBonus: 0.5, // +50% mining output
+      productionMultiplier: 1.2, // +20% production
+    },
+    abilities: [
+      {
+        id: 'deep_mines',
+        name: 'Deep Mines',
+        description: 'Mountain territories produce rare resources and extra production.',
+        isPassive: true,
+      },
+      {
+        id: 'fortify',
+        name: 'Fortify',
+        description: 'Instantly increase defense of a territory by 100% for 10 ticks.',
+        cost: 35,
+        cooldownTicks: 1800,
+        isPassive: false,
+      },
+    ],
+    uniqueBuildings: ['mineshaft', 'watchtower', 'mountain_fortress'],
+  },
+  plains: {
+    id: 'plains',
+    name: 'Fertile Plains',
+    description: 'Agricultural masters. Flat territories support double population and food exports generate gold.',
+    icon: '🌾',
+    bonuses: {
+      populationCapMultiplier: 2.0, // 2x population cap
+      foodProductionMultiplier: 1.3, // +30% food production
+      tradeBonus: 0.3, // +30% trade from food exports
+    },
+    abilities: [
+      {
+        id: 'abundant_harvest',
+        name: 'Abundant Harvest',
+        description: 'Surplus food automatically converts to gold through trade routes.',
+        isPassive: true,
+      },
+      {
+        id: 'grand_feast',
+        name: 'Grand Feast',
+        description: 'Boost population growth by 200% in all territories for 20 ticks.',
+        cost: 45,
+        cooldownTicks: 7200,
+        isPassive: false,
+      },
+    ],
+    uniqueBuildings: ['granary', 'market', 'irrigation'],
+  },
+  nomadic: {
+    id: 'nomadic',
+    name: 'Nomadic Horde',
+    description: 'Swift raiders. No permanent cities, armies move at double speed, and can raid without sieges.',
+    icon: '🐎',
+    bonuses: {
+      movementSpeedMultiplier: 2.0, // 2x movement speed
+      raidDamageMultiplier: 1.5, // +50% raid damage
+      canRaidWithoutSiege: true,
+      useCampsInsteadOfCities: true,
+    },
+    abilities: [
+      {
+        id: 'swift_raid',
+        name: 'Swift Raid',
+        description: 'Attack enemy territories without starting a siege, stealing resources instead.',
+        isPassive: true,
+      },
+      {
+        id: 'great_migration',
+        name: 'Great Migration',
+        description: 'Move all armies instantly to any adjacent territory.',
+        cost: 50,
+        cooldownTicks: 3600,
+        isPassive: false,
+      },
+    ],
+    uniqueBuildings: ['camp', 'horse_stable', 'raider_outpost'],
+  },
+};
+
+// Check if a faction qualifies for specialization unlock
+export function canUnlockSpecialization(
+  factionCreatedAtTick: number,
+  currentTick: number,
+  territoryCount: number
+): boolean {
+  const ticksSurvived = currentTick - factionCreatedAtTick;
+  return ticksSurvived >= SPECIALIZATION_UNLOCK_TICKS && territoryCount >= SPECIALIZATION_UNLOCK_TERRITORIES;
+}
+
 // GameState - the complete world state
 export interface GameState {
   tick: number;
@@ -325,7 +503,11 @@ export type MessageType =
   | 'relation_update'
   | 'season_update'
   | 'season_end'
-  | 'dominance_alert';
+  | 'dominance_alert'
+  | 'specialization_available'
+  | 'choose_specialization'
+  | 'specialization_chosen'
+  | 'use_specialization_ability';
 
 export interface GameMessage {
   type: MessageType;

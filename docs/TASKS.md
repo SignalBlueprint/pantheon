@@ -303,17 +303,17 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Specialization Framework
 
-- [ ] Define specialization unlock trigger — survive 100 ticks, control 5+ territories
-- [ ] Create `specializations` in `packages/shared` — each with passive bonuses and unique abilities
-- [ ] Design four initial paths:
-  - [ ] **Maritime Dominion** — coastal territories produce ships, can settle islands, naval combat bonus
-  - [ ] **Mountain Fortress** — mountain territories have defense bonus, mining produces rare resources
-  - [ ] **Fertile Plains** — flat territories have 2x population cap, food export generates gold
-  - [ ] **Nomadic Horde** — no permanent cities, armies move 2x speed, can raid without siege
+- [x] Define specialization unlock trigger — survive 100 ticks, control 5+ territories
+- [x] Create `specializations` in `packages/shared` — each with passive bonuses and unique abilities
+- [x] Design four initial paths:
+  - [x] **Maritime Dominion** — coastal territories produce ships, can settle islands, naval combat bonus
+  - [x] **Mountain Fortress** — mountain territories have defense bonus, mining produces rare resources
+  - [x] **Fertile Plains** — flat territories have 2x population cap, food export generates gold
+  - [x] **Nomadic Horde** — no permanent cities, armies move 2x speed, can raid without siege
 
 #### Specialization Implementation
 
-- [ ] Add `specialization` field to Faction — null until unlocked, then one of four types
+- [x] Add `specialization` field to Faction — null until unlocked, then one of four types
 - [ ] Implement Maritime abilities — ship unit type, overseas movement, island colonization
 - [ ] Implement Fortress abilities — defense multiplier, mineshaft building, rare resource type
 - [ ] Implement Plains abilities — population modifier, trade route bonuses, granary building
@@ -321,8 +321,8 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### UI for Specialization
 
-- [ ] Create specialization selection modal — appears when unlock triggered, shows all four paths
-- [ ] Add specialization indicator to faction panel — icon and description of chosen path
+- [x] Create specialization selection modal — appears when unlock triggered, shows all four paths
+- [x] Add specialization indicator to faction panel — icon and description of chosen path
 - [ ] Show specialization-specific buildings — only available after path chosen
 - [ ] Display locked paths — show what you didn't choose, can't be changed
 

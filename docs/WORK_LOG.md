@@ -591,3 +591,64 @@ Remaining tasks deferred:
 - Allow early registration (requires lobby/waiting room system)
 
 ---
+
+## Implement Faction Specialization Trees (Section 2.3)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `packages/shared/src/index.ts` — Added SpecializationType, Specialization, SpecializationBonuses, SpecializationAbility types, SPECIALIZATIONS constant, canUnlockSpecialization helper, updated Faction interface with specialization fields
+- `apps/server/src/db/types.ts` — Added specialization, created_at_tick, specialization_unlock_available to DbFaction
+- `apps/server/src/db/persistence.ts` — Updated load/save to include specialization fields
+- `apps/server/src/world/faction.ts` — Updated createFaction to initialize specialization fields
+- `apps/server/src/systems/specialization.ts` — Complete specialization service with unlock checking, selection, AI logic
+- `apps/server/src/simulation/ticker.ts` — Added onSpecializationTick phase for unlock processing
+- `apps/server/src/net/socket.ts` — Added choose_specialization WebSocket handler
+- `apps/server/src/index.ts` — Integrated specialization tick processing
+- `apps/web/src/components/ui/SpecializationModal.tsx` — Selection modal UI
+- `apps/web/src/components/ui/SpecializationIndicator.tsx` — Display indicator UI
+
+**Implementation Notes:**
+### Specialization Framework
+- Four paths: Maritime Dominion, Mountain Fortress, Fertile Plains, Nomadic Horde
+- Unlock requirements: survive 100 ticks AND control 5+ territories
+- Each path has unique bonuses, abilities (passive and active), and unique buildings
+- Permanent choice - cannot be changed once selected
+
+### Specialization System
+- `canUnlockSpecialization()` checks eligibility based on tick age and territory count
+- `chooseSpecialization()` validates and applies the chosen path
+- `processSpecializationTick()` runs every 10 ticks to check all factions
+- AI automatically chooses based on policy profile (aggressive→nomadic, expansive→plains, etc.)
+
+### Bonus Multiplier Functions
+- getDefenseMultiplier(), getPopulationCapMultiplier(), getMovementSpeedMultiplier()
+- getFoodProductionMultiplier(), getProductionMultiplier(), getTradeBonus()
+- canBuildShips(), canSettleIslands(), canRaidWithoutSiege()
+
+### UI Components
+- SpecializationModal: Full selection interface with path details, bonuses, abilities
+- SpecializationIndicator: Compact badge or detailed view for faction panel
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## HORIZON 2 SECTION 2.3 PARTIALLY COMPLETE
+**Completed:** 2026-01-08
+
+Tasks in "2.3 Faction Specialization Trees" implemented:
+- Specialization Framework (7/7 tasks)
+- Specialization Implementation (1/5 tasks - structure only, abilities need full implementation)
+- UI for Specialization (2/4 tasks)
+
+Total: 10/16 tasks complete
+
+Remaining tasks requiring deeper integration:
+- Implement Maritime abilities (ship unit type, overseas movement)
+- Implement Fortress abilities (defense multiplier, mineshaft building)
+- Implement Plains abilities (population modifier, trade routes)
+- Implement Nomadic abilities (camps, raid action)
+- Show specialization-specific buildings
+- Display locked paths UI
+
+---
