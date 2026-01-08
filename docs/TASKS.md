@@ -49,11 +49,11 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### World Tick System
 
-- [ ] Create game loop in `apps/server/src/simulation/ticker.ts` — `setInterval` every 1000ms, increment `worldTick` counter
-- [ ] Define tick phases: 1) Resource production, 2) Population growth, 3) AI decisions, 4) Combat resolution, 5) Broadcast state
-- [ ] Implement resource production — each territory generates food and production based on terrain type
-- [ ] Implement population growth — population grows if food surplus, shrinks if deficit, caps at territory limit
-- [ ] Create `GameState` type — `{ tick, territories: Map<id, Territory>, factions: Map<id, Faction>, pendingBattles[] }`
+- [x] Create game loop in `apps/server/src/simulation/ticker.ts` — `setInterval` every 1000ms, increment `worldTick` counter
+- [x] Define tick phases: 1) Resource production, 2) Population growth, 3) AI decisions, 4) Combat resolution, 5) Broadcast state
+- [x] Implement resource production — each territory generates food and production based on terrain type
+- [x] Implement population growth — population grows if food surplus, shrinks if deficit, caps at territory limit
+- [x] Create `GameState` type — `{ tick, territories: Map<id, Territory>, factions: Map<id, Faction>, pendingBattles[] }`
 
 #### Faction AI
 
