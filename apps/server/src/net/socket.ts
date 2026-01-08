@@ -23,6 +23,7 @@ import {
   breakAlliance,
   DiplomacyResult,
 } from '../systems/diplomacy.js';
+import { sendMessage, SendMessageResult } from '../systems/messages.js';
 
 interface Client {
   ws: WebSocket;
@@ -60,6 +61,11 @@ interface RespondProposalPayload {
   proposerId: string;
   accept: boolean;
   proposalType: 'peace' | 'alliance';
+}
+
+interface SendMessagePayload {
+  receiverId: string;
+  content: string;
 }
 
 /**
@@ -157,6 +163,9 @@ export class GameSocketServer {
         break;
       case 'respond_proposal':
         this.handleRespondProposal(client, message.payload as RespondProposalPayload);
+        break;
+      case 'send_message':
+        this.handleSendMessage(client, message.payload as SendMessagePayload);
         break;
       default:
         console.log(`[Socket] Unhandled message type: ${message.type}`);
@@ -305,6 +314,55 @@ export class GameSocketServer {
 
     if (result.success && result.eventType) {
       this.broadcastDiplomaticEvent(result.eventType, client.factionId, payload.proposerId, result.relation);
+    }
+  }
+
+  /**
+   * Handle send message request
+   */
+  private async handleSendMessage(client: Client, payload: SendMessagePayload): Promise<void> {
+    if (!this.gameState || !client.factionId) {
+      this.sendToClient(client, {
+        type: 'send_message',
+        payload: { success: false, error: 'Not initialized' },
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    const shardId = this.gameState.shardId || 'default';
+    const result = await sendMessage(
+      shardId,
+      client.factionId,
+      payload.receiverId,
+      payload.content
+    );
+
+    // Send result to sender
+    this.sendToClient(client, {
+      type: 'send_message',
+      payload: result,
+      timestamp: Date.now(),
+    });
+
+    // If successful, notify the receiver if they're connected
+    if (result.success && result.message) {
+      this.sendToFaction(payload.receiverId, {
+        type: 'send_message',
+        payload: { received: true, message: result.message },
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  /**
+   * Send message to a specific faction (all clients connected as that faction)
+   */
+  private sendToFaction(factionId: string, message: GameMessage): void {
+    for (const client of this.clients.values()) {
+      if (client.factionId === factionId && client.ws.readyState === WebSocket.OPEN) {
+        client.ws.send(JSON.stringify(message));
+      }
     }
   }
 

@@ -13,6 +13,7 @@ import {
   hexId,
   parseHexId,
   DIPLOMACY_WAR_COST,
+  DIPLOMACY_BREAK_ALLIANCE_COST,
 } from '@pantheon/shared';
 import {
   startSiege,
@@ -31,6 +32,10 @@ import {
   getEnemies,
   getRelationStatus,
   declareWar,
+  getPendingProposals,
+  respondToPeace,
+  respondToAlliance,
+  breakAlliance,
 } from '../systems/diplomacy.js';
 
 // AI decision costs
@@ -108,7 +113,13 @@ export function processAIDecision(
   const { policies, resources } = faction;
   const { unclaimed, enemy, potentialTargets } = getAdjacentTerritories(state, faction);
 
-  // Defense logic first - if own territory under threat
+  // Process diplomatic proposals first (respond to peace/alliance offers)
+  processProposals(state, faction);
+
+  // Evaluate existing alliances (may break losing ones)
+  processAllianceEvaluation(state, faction);
+
+  // Defense logic - if own territory under threat
   processDefense(state, faction, onSiegeEvent);
 
   // Expansion logic - if expansion > 50 and adjacent unclaimed territory exists
@@ -313,6 +324,158 @@ function processDefense(
       faction.resources.production -= 10;
       battle.defenderStrength += 50;
       console.log(`[AI] ${faction.name} reinforces defense of territory ${battle.territoryId}`);
+    }
+  }
+}
+
+/**
+ * Process pending diplomatic proposals (peace, alliance)
+ * AI will evaluate and respond to proposals from other factions
+ */
+function processProposals(state: GameState, faction: Faction): void {
+  const proposals = getPendingProposals(state, faction.id);
+
+  for (const relation of proposals) {
+    if (!relation.proposedBy || !relation.proposalType) continue;
+
+    const proposer = state.factions.get(relation.proposedBy);
+    if (!proposer) continue;
+
+    // Determine whether to accept based on proposal type
+    let shouldAccept = false;
+
+    if (relation.proposalType === 'peace') {
+      // Evaluate peace offer - accept if:
+      // 1. We're significantly weaker (losing the war)
+      // 2. We're under siege and struggling
+      // 3. Low aggression policy (prefer peace)
+      const ourStrength = calculateFactionStrength(state, faction);
+      const theirStrength = calculateFactionStrength(state, proposer);
+      const strengthRatio = ourStrength / Math.max(theirStrength, 1);
+
+      const territoriesUnderSiege = getTerritoriesUnderSiege(state, faction.id);
+      const underPressure = territoriesUnderSiege.length > 0;
+
+      // Accept peace if we're weaker or under siege pressure
+      if (strengthRatio < 0.7) {
+        shouldAccept = true; // We're significantly weaker
+      } else if (underPressure && strengthRatio < 1.2) {
+        shouldAccept = true; // Under siege and not much stronger
+      } else if (faction.policies.aggression < 40) {
+        shouldAccept = Math.random() < 0.7; // Low aggression - 70% chance to accept
+      } else {
+        shouldAccept = Math.random() < 0.3; // Normal - 30% chance to accept
+      }
+
+      const result = respondToPeace(state, faction.id, relation.proposedBy, shouldAccept);
+      if (result.success) {
+        console.log(`[AI Diplomacy] ${faction.name} ${shouldAccept ? 'accepted' : 'rejected'} peace from ${proposer.name}`);
+      }
+    } else if (relation.proposalType === 'alliance') {
+      // Evaluate alliance offer - accept if:
+      // 1. We have common enemies
+      // 2. Proposer is reasonably strong (not dead weight)
+      // 3. We have low aggression (more cooperative)
+      const ourStrength = calculateFactionStrength(state, faction);
+      const theirStrength = calculateFactionStrength(state, proposer);
+
+      const ourEnemies = new Set(getEnemies(state, faction.id));
+      const theirEnemies = getEnemies(state, relation.proposedBy);
+      const sharedEnemies = theirEnemies.filter((e) => ourEnemies.has(e));
+
+      // Accept alliance if:
+      // - They're not too weak (at least 40% of our strength)
+      // - We share enemies OR they're strong (good protection)
+      const isStrongEnough = theirStrength >= ourStrength * 0.4;
+      const hasSharedEnemies = sharedEnemies.length > 0;
+      const isVeryStrong = theirStrength > ourStrength * 1.3;
+
+      if (isStrongEnough && (hasSharedEnemies || isVeryStrong)) {
+        shouldAccept = true;
+      } else if (faction.policies.aggression < 30) {
+        shouldAccept = Math.random() < 0.6; // Low aggression - 60% chance
+      } else {
+        shouldAccept = Math.random() < 0.2; // Otherwise 20% chance
+      }
+
+      const result = respondToAlliance(state, faction.id, relation.proposedBy, shouldAccept);
+      if (result.success) {
+        console.log(`[AI Diplomacy] ${faction.name} ${shouldAccept ? 'accepted' : 'rejected'} alliance from ${proposer.name}`);
+      }
+    }
+  }
+}
+
+/**
+ * Evaluate alliances and potentially break losing ones
+ * AI will break alliances if:
+ * - Ally is dragging them into an unwinnable war
+ * - Ally is too weak to be useful
+ * - High aggression and ally is blocking expansion
+ */
+function processAllianceEvaluation(state: GameState, faction: Faction): void {
+  // Only evaluate periodically (every ~100 ticks) to avoid constant flip-flopping
+  if (state.tick % 100 !== 0) return;
+
+  // Need enough divine power to break alliance
+  if (faction.divinePower < DIPLOMACY_BREAK_ALLIANCE_COST) return;
+
+  const allies = getAllies(state, faction.id);
+  if (allies.length === 0) return;
+
+  const ourStrength = calculateFactionStrength(state, faction);
+  const ourEnemies = getEnemies(state, faction.id);
+
+  for (const allyId of allies) {
+    const ally = state.factions.get(allyId);
+    if (!ally) continue;
+
+    const allyStrength = calculateFactionStrength(state, ally);
+    const allyEnemies = getEnemies(state, allyId);
+
+    // Check if ally is dragging us into bad wars
+    // Ally's enemies become our de-facto enemies due to alliance obligations
+    let totalEnemyStrength = 0;
+    for (const enemyId of allyEnemies) {
+      const enemy = state.factions.get(enemyId);
+      if (enemy) {
+        totalEnemyStrength += calculateFactionStrength(state, enemy);
+      }
+    }
+
+    const combinedStrength = ourStrength + allyStrength;
+    const isLosingWar = allyEnemies.length > 0 && totalEnemyStrength > combinedStrength * 1.5;
+
+    // Check if ally is too weak to be useful (less than 20% of our strength)
+    const allyIsWeak = allyStrength < ourStrength * 0.2;
+
+    // High aggression AI might want to break alliance to attack the ally
+    const wantsToAttack = faction.policies.aggression > 80 &&
+      allyStrength < ourStrength * 0.5 &&
+      Math.random() < 0.1; // Small chance
+
+    let shouldBreak = false;
+    let reason = '';
+
+    if (isLosingWar && allyEnemies.length > 0) {
+      shouldBreak = Math.random() < 0.4; // 40% chance to abandon losing alliance
+      reason = 'ally dragging into losing war';
+    } else if (allyIsWeak && ourEnemies.length === 0) {
+      // Only break weak ally if we're not in our own war
+      shouldBreak = Math.random() < 0.2; // 20% chance
+      reason = 'ally too weak';
+    } else if (wantsToAttack) {
+      shouldBreak = true;
+      reason = 'high aggression wants territory';
+    }
+
+    if (shouldBreak) {
+      const result = breakAlliance(state, faction.id, allyId);
+      if (result.success) {
+        console.log(`[AI Diplomacy] ${faction.name} broke alliance with ${ally.name} (${reason})`);
+      }
+      // Only break one alliance per tick
+      return;
     }
   }
 }

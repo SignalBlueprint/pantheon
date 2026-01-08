@@ -12,6 +12,13 @@ import {
   markAsRead,
   markAllAsRead,
 } from './systems/notifications.js';
+import {
+  getMessages,
+  getConversation,
+  getUnreadMessageCount,
+  markMessageAsRead,
+  markAllMessagesAsRead,
+} from './systems/messages.js';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
@@ -94,6 +101,90 @@ app.post('/api/notifications/mark-all-read', async (req, res) => {
   } catch (error) {
     console.error('[API] Error marking all notifications as read:', error);
     res.status(500).json({ error: 'Failed to mark all notifications as read' });
+  }
+});
+
+// Message API endpoints
+
+// GET /api/messages - Get messages for a faction
+app.get('/api/messages', async (req, res) => {
+  const factionId = req.query.factionId as string;
+  if (!factionId) {
+    return res.status(400).json({ error: 'factionId query parameter required' });
+  }
+
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+
+  try {
+    const messages = await getMessages(factionId, limit);
+    res.json({ messages });
+  } catch (error) {
+    console.error('[API] Error fetching messages:', error);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// GET /api/messages/conversation - Get conversation between two factions
+app.get('/api/messages/conversation', async (req, res) => {
+  const factionA = req.query.factionA as string;
+  const factionB = req.query.factionB as string;
+  if (!factionA || !factionB) {
+    return res.status(400).json({ error: 'factionA and factionB query parameters required' });
+  }
+
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+
+  try {
+    const messages = await getConversation(factionA, factionB, limit);
+    res.json({ messages });
+  } catch (error) {
+    console.error('[API] Error fetching conversation:', error);
+    res.status(500).json({ error: 'Failed to fetch conversation' });
+  }
+});
+
+// GET /api/messages/unread-count - Get unread message count
+app.get('/api/messages/unread-count', async (req, res) => {
+  const factionId = req.query.factionId as string;
+  if (!factionId) {
+    return res.status(400).json({ error: 'factionId query parameter required' });
+  }
+
+  try {
+    const count = await getUnreadMessageCount(factionId);
+    res.json({ count });
+  } catch (error) {
+    console.error('[API] Error fetching unread message count:', error);
+    res.status(500).json({ error: 'Failed to fetch unread message count' });
+  }
+});
+
+// POST /api/messages/:id/read - Mark a message as read
+app.post('/api/messages/:id/read', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await markMessageAsRead(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[API] Error marking message as read:', error);
+    res.status(500).json({ error: 'Failed to mark message as read' });
+  }
+});
+
+// POST /api/messages/mark-all-read - Mark all messages as read for a faction
+app.post('/api/messages/mark-all-read', async (req, res) => {
+  const factionId = req.body.factionId as string;
+  if (!factionId) {
+    return res.status(400).json({ error: 'factionId required in request body' });
+  }
+
+  try {
+    await markAllMessagesAsRead(factionId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[API] Error marking all messages as read:', error);
+    res.status(500).json({ error: 'Failed to mark all messages as read' });
   }
 });
 

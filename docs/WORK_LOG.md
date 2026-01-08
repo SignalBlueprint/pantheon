@@ -475,20 +475,47 @@ Successfully ran `pnpm build` - all packages compiled without errors.
 
 ---
 
-## HORIZON 2 SECTION 2.1 MOSTLY COMPLETE
+## Complete Remaining Section 2.1 Features
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/systems/messages.ts` — Created deity-to-deity message service
+- `apps/server/src/index.ts` — Added message API endpoints
+- `apps/server/src/net/socket.ts` — Added WebSocket handler for sending messages
+- `apps/web/src/hooks/useGameSocket.ts` — Added sendDeityMessage function and onMessage callback
+- `apps/web/src/components/ui/MessagesPanel.tsx` — Created messaging UI component
+- `apps/server/src/simulation/ai.ts` — Added AI proposal responses and alliance breaking logic
+
+**Implementation Notes:**
+### Message System
+- `sendMessage()` allows factions to send text messages to each other
+- WebSocket handler for real-time message delivery
+- API endpoints: GET /api/messages, GET /api/messages/conversation, GET /api/messages/unread-count, POST /api/messages/:id/read, POST /api/messages/mark-all-read
+- MessagesPanel UI with conversation view and message input
+
+### AI Proposal Responses
+- `processProposals()` evaluates pending peace and alliance offers
+- Peace acceptance based on: strength ratio, siege pressure, aggression policy
+- Alliance acceptance based on: shared enemies, ally strength, cooperation tendency
+
+### AI Alliance Breaking
+- `processAllianceEvaluation()` periodically evaluates existing alliances
+- Breaks alliances when: ally dragging into losing war, ally too weak, high aggression wants territory
+- Includes random chance factors to prevent predictable behavior
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## HORIZON 2 SECTION 2.1 COMPLETE
 **Completed:** 2026-01-08
 
-Most tasks in "2.1 Diplomacy and Deity Alliances" have been implemented:
+All tasks in "2.1 Diplomacy and Deity Alliances" have been implemented:
 - Diplomatic Relations (5/5 tasks)
 - Alliance Benefits (4/4 tasks)
-- Diplomacy UI (3/4 tasks - message system infrastructure ready but not fully implemented)
-- AI Diplomacy (2/4 tasks - basic war declaration and alliance respect implemented)
+- Diplomacy UI (4/4 tasks)
+- AI Diplomacy (4/4 tasks)
 
-Total: 14/17 tasks complete
-
-Remaining for future:
-- Create message system (deity-to-deity text messages)
-- AI accepts/rejects proposals (currently only initiates)
-- AI breaks losing alliances
+Total: 17/17 tasks complete
 
 ---

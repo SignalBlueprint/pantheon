@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SerializedGameState, Territory, Faction, Siege, GameMessage } from '@pantheon/shared';
+import { SerializedGameState, Territory, Faction, Siege, GameMessage, DiplomaticMessage } from '@pantheon/shared';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
 
@@ -25,6 +25,13 @@ export interface SiegeEvent {
   defenderName?: string;
 }
 
+export interface DeityMessageEvent {
+  received?: boolean;
+  success?: boolean;
+  error?: string;
+  message?: DiplomaticMessage;
+}
+
 interface UseGameSocketOptions {
   url?: string;
   autoConnect?: boolean;
@@ -36,6 +43,7 @@ interface UseGameSocketOptions {
   onSiegeProgress?: (event: SiegeEvent) => void;
   onSiegeComplete?: (event: SiegeEvent) => void;
   onSiegeBroken?: (event: SiegeEvent) => void;
+  onMessage?: (event: DeityMessageEvent) => void;
 }
 
 interface UseGameSocketReturn {
@@ -48,6 +56,7 @@ interface UseGameSocketReturn {
   sendMessage: (message: GameMessage) => void;
   selectFaction: (factionId: string) => void;
   castMiracle: (miracleId: string, targetId: string) => void;
+  sendDeityMessage: (receiverId: string, content: string) => void;
 }
 
 const DEFAULT_URL = 'ws://localhost:3001';
@@ -69,6 +78,7 @@ export function useGameSocket(options: UseGameSocketOptions = {}): UseGameSocket
     onSiegeProgress,
     onSiegeComplete,
     onSiegeBroken,
+    onMessage,
   } = options;
 
   const [gameState, setGameState] = useState<SerializedGameState | null>(null);
@@ -189,13 +199,17 @@ export function useGameSocket(options: UseGameSocketOptions = {}): UseGameSocket
           });
           break;
 
+        case 'send_message':
+          onMessage?.(message.payload as DeityMessageEvent);
+          break;
+
         default:
           console.log('[Socket] Unhandled message type:', message.type);
       }
     } catch (e) {
       console.error('[Socket] Failed to parse message:', e);
     }
-  }, [onMiracleResult, onMiracleCast, onSiegeStarted, onSiegeProgress, onSiegeComplete, onSiegeBroken]);
+  }, [onMiracleResult, onMiracleCast, onSiegeStarted, onSiegeProgress, onSiegeComplete, onSiegeBroken, onMessage]);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -279,6 +293,15 @@ export function useGameSocket(options: UseGameSocketOptions = {}): UseGameSocket
     console.log('[Socket] Casting miracle:', miracleId, 'on target:', targetId);
   }, [sendMessage]);
 
+  const sendDeityMessage = useCallback((receiverId: string, content: string) => {
+    sendMessage({
+      type: 'send_message',
+      payload: { receiverId, content },
+      timestamp: Date.now(),
+    });
+    console.log('[Socket] Sending message to:', receiverId);
+  }, [sendMessage]);
+
   // Auto-connect on mount
   useEffect(() => {
     if (autoConnect) {
@@ -300,6 +323,7 @@ export function useGameSocket(options: UseGameSocketOptions = {}): UseGameSocket
     sendMessage,
     selectFaction,
     castMiracle,
+    sendDeityMessage,
   };
 }
 

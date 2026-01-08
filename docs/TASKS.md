@@ -208,15 +208,15 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 - [x] Create diplomacy panel in `apps/web/src/components/ui/DiplomacyPanel.tsx` — list all factions with current relation
 - [x] Add relation action buttons — "Declare War", "Propose Alliance", "Offer Peace"
-- [ ] Create message system — simple text messages between deities
+- [x] Create message system — simple text messages between deities
 - [x] Show diplomatic history — "X declared war on Y", "A and B formed alliance"
 
 #### AI Diplomacy
 
 - [x] AI evaluates alliance value — considers shared enemies, relative power, border length
-- [ ] AI accepts/rejects proposals — based on policy settings and strategic situation
+- [x] AI accepts/rejects proposals — based on policy settings and strategic situation
 - [x] AI declares wars — when aggression high and target is weak
-- [ ] AI breaks losing alliances — if ally is dragging them into unwinnable war
+- [x] AI breaks losing alliances — if ally is dragging them into unwinnable war
 
 **New Infrastructure Required:**
 - `relations` table in Supabase
