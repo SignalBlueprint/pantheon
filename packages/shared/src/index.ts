@@ -850,6 +850,133 @@ export interface ReplayStateInfo {
   territoryCount: number;
 }
 
+// ============== HIGHLIGHT SYSTEM (Moonshot Phase 3) ==============
+
+// Highlight categories
+export type HighlightCategory =
+  | 'battle'           // Large battles, decisive victories
+  | 'conquest'         // Territory captures, siege completions
+  | 'diplomacy'        // Wars, alliances, betrayals
+  | 'divine'           // Miracle casts, divine interventions
+  | 'champion'         // Champion spawns, deaths, blessings
+  | 'dominance'        // Faction dominance events
+  | 'elimination'      // Faction eliminations
+  | 'underdog'         // Underdog victories
+  | 'comeback'         // Dramatic reversals
+  | 'general';         // Other notable events
+
+// Highlight interface
+export interface Highlight {
+  id: string;
+  shardId: string;
+  seasonId?: string;
+  tick: number;
+  eventType: string;
+  title: string;
+  description?: string;
+  score: number;
+  category: HighlightCategory;
+  highlightData: Record<string, unknown>;
+  eventIds: string[];
+  viewCount: number;
+  shareCount: number;
+  voteScore: number;
+  isFeatured: boolean;
+  isEternalCanon: boolean;
+  createdAt: number;
+}
+
+// Highlight vote
+export interface HighlightVote {
+  id: string;
+  highlightId: string;
+  deityId: string;
+  voteType: 'up' | 'down';
+  createdAt: number;
+}
+
+// Highlight reel - collection of highlights
+export interface HighlightReel {
+  id: string;
+  shardId?: string;
+  seasonId?: string;
+  title: string;
+  description?: string;
+  highlightIds: string[];
+  reelType: 'auto' | 'curated' | 'user';
+  creatorDeityId?: string;
+  viewCount: number;
+  shareCount: number;
+  isFeatured: boolean;
+  isPublic: boolean;
+  createdAt: number;
+}
+
+// Spectator link for sharing specific moments
+export interface SpectatorLink {
+  id: string;
+  code: string;
+  shardId: string;
+  seasonId?: string;
+  startTick: number;
+  endTick?: number;
+  title?: string;
+  description?: string;
+  creatorDeityId?: string;
+  viewCount: number;
+  expiresAt?: number;
+  createdAt: number;
+}
+
+// Highlight scoring weights
+export const HIGHLIGHT_SCORE_WEIGHTS = {
+  // Base event scores
+  territory_captured: 10,
+  siege_completed: 15,
+  faction_eliminated: 50,
+  war_declared: 12,
+  alliance_formed: 10,
+  alliance_broken: 20,
+  champion_died: 15,
+  champion_blessed: 8,
+  miracle_cast: 5,
+  dominance_started: 30,
+  season_ended: 100,
+
+  // Multipliers
+  underdogMultiplier: 2.0,      // Small faction beats large faction
+  comebackMultiplier: 1.8,      // Faction recovering from near-elimination
+  clusterBonus: 1.5,            // Multiple significant events close together
+  dramaticTimingBonus: 1.3,     // Event at critical moment (near season end, etc.)
+  casualtyScaling: 0.1,         // Per 100 casualties in battles
+  territorySwingScaling: 0.2,   // Per territory changing hands
+} as const;
+
+// Highlight detection thresholds
+export const HIGHLIGHT_THRESHOLDS = {
+  minScore: 10,                  // Minimum score to be a highlight
+  featuredScore: 50,             // Score to be featured
+  eternalCanonScore: 100,        // Score to be considered for eternal canon
+  eternalCanonVotes: 50,         // Minimum votes for eternal canon
+  clusterWindowTicks: 60,        // Ticks to consider events as clustered
+  maxHighlightsPerReel: 10,      // Max highlights in an auto-generated reel
+  reelMinHighlights: 3,          // Min highlights needed to generate reel
+} as const;
+
+// Highlight detection result
+export interface HighlightDetection {
+  tick: number;
+  eventType: GameEventType;
+  baseScore: number;
+  multipliers: { name: string; value: number }[];
+  finalScore: number;
+  category: HighlightCategory;
+  title: string;
+  description: string;
+  factions: { id: string; name: string; role: 'subject' | 'target' | 'involved' }[];
+  metadata: Record<string, unknown>;
+}
+
 // Helper to create initial game state
 export function createInitialGameState(): GameState {
   return {

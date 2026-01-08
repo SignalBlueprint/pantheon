@@ -417,3 +417,90 @@ export interface DbSeasonRegistration {
 // Insert/update types for season registrations
 export type DbSeasonRegistrationInsert = Omit<DbSeasonRegistration, 'id' | 'registered_at' | 'updated_at'>;
 export type DbSeasonRegistrationUpdate = Partial<Omit<DbSeasonRegistration, 'id' | 'season_id' | 'deity_id' | 'registered_at' | 'updated_at'>>;
+
+// Import highlight types
+import { HighlightCategory } from '@pantheon/shared';
+
+/**
+ * Database row for highlights table
+ */
+export interface DbHighlight {
+  id: string;
+  shard_id: string;
+  season_id: string | null;
+  tick: number;
+  event_type: string;
+  title: string;
+  description: string | null;
+  score: number;
+  category: HighlightCategory;
+  highlight_data: Record<string, unknown>;
+  event_ids: string[];
+  view_count: number;
+  share_count: number;
+  vote_score: number;
+  is_featured: boolean;
+  is_eternal_canon: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Database row for highlight_votes table
+ */
+export interface DbHighlightVote {
+  id: string;
+  highlight_id: string;
+  deity_id: string;
+  vote_type: 'up' | 'down';
+  created_at: string;
+}
+
+/**
+ * Database row for highlight_reels table
+ */
+export interface DbHighlightReel {
+  id: string;
+  shard_id: string | null;
+  season_id: string | null;
+  title: string;
+  description: string | null;
+  highlight_ids: string[];
+  reel_type: 'auto' | 'curated' | 'user';
+  creator_deity_id: string | null;
+  view_count: number;
+  share_count: number;
+  is_featured: boolean;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Database row for spectator_links table
+ */
+export interface DbSpectatorLink {
+  id: string;
+  code: string;
+  shard_id: string;
+  season_id: string | null;
+  start_tick: number;
+  end_tick: number | null;
+  title: string | null;
+  description: string | null;
+  creator_deity_id: string | null;
+  view_count: number;
+  expires_at: string | null;
+  created_at: string;
+}
+
+// Insert types for highlight tables
+export type DbHighlightInsert = Omit<DbHighlight, 'id' | 'view_count' | 'share_count' | 'vote_score' | 'is_featured' | 'is_eternal_canon' | 'created_at' | 'updated_at'>;
+export type DbHighlightVoteInsert = Omit<DbHighlightVote, 'id' | 'created_at'>;
+export type DbHighlightReelInsert = Omit<DbHighlightReel, 'id' | 'view_count' | 'share_count' | 'is_featured' | 'created_at' | 'updated_at'>;
+export type DbSpectatorLinkInsert = Omit<DbSpectatorLink, 'id' | 'view_count' | 'created_at'>;
+
+// Update types for highlight tables
+export type DbHighlightUpdate = Partial<Pick<DbHighlight, 'title' | 'description' | 'score' | 'is_featured' | 'is_eternal_canon' | 'view_count' | 'share_count'>>;
+export type DbHighlightReelUpdate = Partial<Omit<DbHighlightReel, 'id' | 'shard_id' | 'created_at' | 'updated_at'>>;
+export type DbSpectatorLinkUpdate = Partial<Pick<DbSpectatorLink, 'title' | 'description' | 'view_count' | 'expires_at'>>;

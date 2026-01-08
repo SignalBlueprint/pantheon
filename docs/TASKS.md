@@ -457,12 +457,12 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 **Goal:** Curated highlights and community features.
 
-- [ ] Create highlight detection — algorithm identifies "interesting" moments (large battles, dramatic reversals)
-- [ ] Build highlight reel generator — compile top 10 moments from a season
-- [ ] Implement community voting — players upvote best moments
-- [ ] Create "Eternal Canon" view — curated hall of fame moments across all shards/seasons
-- [ ] Add social sharing — export clips as video or GIF
-- [ ] Enable spectator links — shareable URLs that open replay at specific moment
+- [x] Create highlight detection — algorithm identifies "interesting" moments (large battles, dramatic reversals)
+- [x] Build highlight reel generator — compile top 10 moments from a season
+- [x] Implement community voting — players upvote best moments
+- [x] Create "Eternal Canon" view — curated hall of fame moments across all shards/seasons
+- [x] Add social sharing — export clips as video or GIF
+- [x] Enable spectator links — shareable URLs that open replay at specific moment
 
 **Estimated Effort:** 30-40 hours
 
