@@ -8,6 +8,7 @@ import {
   SerializedGameState,
   Territory,
   Faction,
+  Siege,
   GameMessage,
   MessageType,
 } from '@pantheon/shared';
@@ -291,11 +292,18 @@ export class GameSocketServer {
       factions[id] = f;
     }
 
+    const sieges: Record<string, Siege> = {};
+    for (const [id, s] of state.sieges) {
+      sieges[id] = s;
+    }
+
     return {
       tick: state.tick,
+      shardId: state.shardId,
       territories,
       factions,
       pendingBattles: state.pendingBattles,
+      sieges,
     };
   }
 

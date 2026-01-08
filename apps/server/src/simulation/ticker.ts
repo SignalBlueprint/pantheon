@@ -14,6 +14,8 @@ export interface TickerConfig {
   onPopulationGrowth?: TickPhase;
   onAIDecisions?: TickPhase;
   onCombatResolution?: TickPhase;
+  onSiegeProgress?: TickPhase;
+  onPersistence?: TickPhase;
   onBroadcastState?: TickPhase;
 }
 
@@ -64,7 +66,8 @@ export class Ticker {
   /**
    * Execute one tick of the game loop
    * Phases: 1) Divine power regen, 2) Effect expiration, 3) Resource production,
-   *         4) Population growth, 5) AI decisions, 6) Combat resolution, 7) Broadcast state
+   *         4) Population growth, 5) AI decisions, 6) Combat resolution,
+   *         7) Siege progress, 8) Persistence, 9) Broadcast state
    */
   tick(): void {
     this.state.tick++;
@@ -89,7 +92,13 @@ export class Ticker {
     // Phase 6: Combat resolution
     this.config.onCombatResolution?.(this.state);
 
-    // Phase 7: Broadcast state
+    // Phase 7: Siege progress
+    this.config.onSiegeProgress?.(this.state);
+
+    // Phase 8: Persistence (save to database)
+    this.config.onPersistence?.(this.state);
+
+    // Phase 9: Broadcast state
     this.config.onBroadcastState?.(this.state);
   }
 
@@ -238,5 +247,6 @@ export function createInitialGameState(): GameState {
     territories: new Map(),
     factions: new Map(),
     pendingBattles: [],
+    sieges: new Map(),
   };
 }

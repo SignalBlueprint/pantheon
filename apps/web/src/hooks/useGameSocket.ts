@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SerializedGameState, Territory, Faction, GameMessage } from '@pantheon/shared';
+import { SerializedGameState, Territory, Faction, Siege, GameMessage } from '@pantheon/shared';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
 
@@ -18,6 +18,13 @@ export interface MiracleCastEvent {
   effectId?: string;
 }
 
+export interface SiegeEvent {
+  siege: Siege;
+  territoryId: string;
+  attackerName?: string;
+  defenderName?: string;
+}
+
 interface UseGameSocketOptions {
   url?: string;
   autoConnect?: boolean;
@@ -25,6 +32,10 @@ interface UseGameSocketOptions {
   maxReconnectAttempts?: number;
   onMiracleResult?: (result: MiracleResult) => void;
   onMiracleCast?: (event: MiracleCastEvent) => void;
+  onSiegeStarted?: (event: SiegeEvent) => void;
+  onSiegeProgress?: (event: SiegeEvent) => void;
+  onSiegeComplete?: (event: SiegeEvent) => void;
+  onSiegeBroken?: (event: SiegeEvent) => void;
 }
 
 interface UseGameSocketReturn {
@@ -54,6 +65,10 @@ export function useGameSocket(options: UseGameSocketOptions = {}): UseGameSocket
     maxReconnectAttempts = MAX_RECONNECT_ATTEMPTS,
     onMiracleResult,
     onMiracleCast,
+    onSiegeStarted,
+    onSiegeProgress,
+    onSiegeComplete,
+    onSiegeBroken,
   } = options;
 
   const [gameState, setGameState] = useState<SerializedGameState | null>(null);
@@ -114,13 +129,73 @@ export function useGameSocket(options: UseGameSocketOptions = {}): UseGameSocket
           onMiracleCast?.(message.payload as MiracleCastEvent);
           break;
 
+        case 'siege_started':
+          onSiegeStarted?.(message.payload as SiegeEvent);
+          // Update local state with new siege
+          setGameState((prev) => {
+            if (!prev) return null;
+            const siegeEvent = message.payload as SiegeEvent;
+            return {
+              ...prev,
+              sieges: {
+                ...prev.sieges,
+                [siegeEvent.siege.id]: siegeEvent.siege,
+              },
+            };
+          });
+          break;
+
+        case 'siege_progress':
+          onSiegeProgress?.(message.payload as SiegeEvent);
+          // Update siege progress in local state
+          setGameState((prev) => {
+            if (!prev) return null;
+            const siegeEvent = message.payload as SiegeEvent;
+            return {
+              ...prev,
+              sieges: {
+                ...prev.sieges,
+                [siegeEvent.siege.id]: siegeEvent.siege,
+              },
+            };
+          });
+          break;
+
+        case 'siege_complete':
+          onSiegeComplete?.(message.payload as SiegeEvent);
+          // Remove completed siege from local state
+          setGameState((prev) => {
+            if (!prev) return null;
+            const siegeEvent = message.payload as SiegeEvent;
+            const { [siegeEvent.siege.id]: _removed, ...remainingSieges } = prev.sieges;
+            return {
+              ...prev,
+              sieges: remainingSieges,
+            };
+          });
+          break;
+
+        case 'siege_broken':
+          onSiegeBroken?.(message.payload as SiegeEvent);
+          // Remove broken siege from local state
+          setGameState((prev) => {
+            if (!prev) return null;
+            const siegeEvent = message.payload as SiegeEvent;
+            const { [siegeEvent.siege.id]: _removed, ...remainingSieges } = prev.sieges;
+            return {
+              ...prev,
+              sieges: remainingSieges,
+            };
+          });
+          break;
+
         default:
           console.log('[Socket] Unhandled message type:', message.type);
       }
     } catch (e) {
       console.error('[Socket] Failed to parse message:', e);
     }
-  }, [onMiracleResult, onMiracleCast]);
+  }, [onMiracleResult, onMiracleCast, onSiegeStarted, onSiegeProgress, onSiegeComplete, onSiegeBroken]);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;

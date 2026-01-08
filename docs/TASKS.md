@@ -139,23 +139,23 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Persistence Layer
 
-- [ ] Create Supabase tables:
-  - [ ] `shards` — `{ id, name, created_at, current_tick, status }`
-  - [ ] `factions` — `{ id, shard_id, deity_id, name, color, policies, divine_power }`
-  - [ ] `territories` — `{ id, shard_id, q, r, owner_id, population, food, production, active_effects }`
-  - [ ] `sieges` — `{ id, attacker_id, territory_id, started_at, progress, required_progress }`
-- [ ] Implement state save on tick — batch update changed records every 10 ticks
-- [ ] Implement state load on server start — query Supabase, reconstruct GameState
-- [ ] Add server graceful shutdown — save full state before exit
+- [x] Create Supabase tables:
+  - [x] `shards` — `{ id, name, created_at, current_tick, status }`
+  - [x] `factions` — `{ id, shard_id, deity_id, name, color, policies, divine_power }`
+  - [x] `territories` — `{ id, shard_id, q, r, owner_id, population, food, production, active_effects }`
+  - [x] `sieges` — `{ id, attacker_id, territory_id, started_at, progress, required_progress }`
+- [x] Implement state save on tick — batch update changed records every 10 ticks
+- [x] Implement state load on server start — query Supabase, reconstruct GameState
+- [x] Add server graceful shutdown — save full state before exit
 
 #### Siege System
 
-- [ ] Replace instant capture with siege mechanic — attacking army starts siege instead of capturing
-- [ ] Define siege progress — accumulates based on attacker army strength vs defender strength
-- [ ] Set siege duration — minimum 24 hours for undefended, 48+ hours for defended territories
-- [ ] Implement siege tick in `apps/server/src/simulation/siege.ts` — increment progress each tick
-- [ ] Complete siege when progress reaches threshold — transfer territory ownership, reset siege
-- [ ] Allow siege breaking — if defender army arrives, siege can be contested or lifted
+- [x] Replace instant capture with siege mechanic — attacking army starts siege instead of capturing
+- [x] Define siege progress — accumulates based on attacker army strength vs defender strength
+- [x] Set siege duration — minimum 24 hours for undefended, 48+ hours for defended territories
+- [x] Implement siege tick in `apps/server/src/simulation/siege.ts` — increment progress each tick
+- [x] Complete siege when progress reaches threshold — transfer territory ownership, reset siege
+- [x] Allow siege breaking — if defender army arrives, siege can be contested or lifted
 
 #### Notification System
 
@@ -167,8 +167,8 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Offline AI Enhancement
 
-- [ ] Improve AI to handle sieges — AI defends sieged territories, breaks enemy sieges
-- [ ] Add AI retreat logic — if siege is hopeless, AI may abandon territory to save army
+- [x] Improve AI to handle sieges — AI defends sieged territories, breaks enemy sieges
+- [x] Add AI retreat logic — if siege is hopeless, AI may abandon territory to save army
 - [ ] Implement AI notifications — AI deity gets same notifications, may respond automatically
 
 **Acceptance Criteria:**

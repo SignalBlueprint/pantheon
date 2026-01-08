@@ -8,10 +8,21 @@ import {
   Faction,
   Territory,
   PendingBattle,
+  Siege,
   hexNeighbors,
   hexId,
   parseHexId,
 } from '@pantheon/shared';
+import {
+  startSiege,
+  getTerritorySeige,
+  getFactionSieges,
+  getTerritoriesUnderSiege,
+  reinforceSiege,
+  breakSiege,
+  SiegeEvent,
+  OnSiegeEvent,
+} from './siege.js';
 
 // AI decision costs
 const EXPANSION_COST = 20; // Production cost to claim a territory
@@ -67,9 +78,16 @@ function getAdjacentTerritories(
 /**
  * Process AI decisions for a single faction
  */
-export function processAIDecision(state: GameState, faction: Faction): void {
+export function processAIDecision(
+  state: GameState,
+  faction: Faction,
+  onSiegeEvent?: OnSiegeEvent
+): void {
   const { policies, resources } = faction;
   const { unclaimed, enemy } = getAdjacentTerritories(state, faction);
+
+  // Defense logic first - if own territory under threat
+  processDefense(state, faction, onSiegeEvent);
 
   // Expansion logic - if expansion > 50 and adjacent unclaimed territory exists
   if (addRandomness(policies.expansion) > 50 && unclaimed.length > 0) {
@@ -78,11 +96,8 @@ export function processAIDecision(state: GameState, faction: Faction): void {
 
   // Aggression logic - if aggression > 50 and adjacent enemy territory
   if (addRandomness(policies.aggression) > 50 && enemy.length > 0) {
-    processAggression(state, faction, enemy);
+    processAggression(state, faction, enemy, onSiegeEvent);
   }
-
-  // Defense logic - if own territory under threat
-  processDefense(state, faction);
 }
 
 /**
@@ -108,25 +123,32 @@ function processExpansion(
 }
 
 /**
- * Process aggression - queue attack on enemy territory
+ * Process aggression - start siege on enemy territory
  */
 function processAggression(
   state: GameState,
   faction: Faction,
-  enemy: Territory[]
+  enemy: Territory[],
+  onSiegeEvent?: OnSiegeEvent
 ): void {
   if (faction.resources.production < ATTACK_COST) return;
 
-  // Check if we already have a pending battle with this target
-  const pendingTargets = new Set(
-    state.pendingBattles
-      .filter((b) => b.attackerId === faction.id)
-      .map((b) => b.territoryId)
-  );
+  // Get existing sieges we're conducting
+  const existingSieges = getFactionSieges(state, faction.id);
+  const siegeTargets = new Set(existingSieges.map((s) => s.territoryId));
 
-  // Find a target we're not already attacking
-  const validTargets = enemy.filter((t) => !pendingTargets.has(t.id));
-  if (validTargets.length === 0) return;
+  // Find a target we're not already sieging
+  const validTargets = enemy.filter((t) => !siegeTargets.has(t.id));
+  if (validTargets.length === 0) {
+    // Maybe reinforce existing siege instead
+    if (existingSieges.length > 0 && faction.resources.production >= 20) {
+      const siegeToReinforce = existingSieges[Math.floor(Math.random() * existingSieges.length)];
+      faction.resources.production -= 20;
+      reinforceSiege(state, siegeToReinforce.id, 50);
+      console.log(`[AI] ${faction.name} reinforces siege on territory ${siegeToReinforce.territoryId}`);
+    }
+    return;
+  }
 
   // Pick random target
   const target = validTargets[Math.floor(Math.random() * validTargets.length)];
@@ -134,41 +156,80 @@ function processAggression(
   if (!defender) return;
 
   // Calculate strength based on population
-  const attackerStrength = calculateFactionStrength(state, faction);
+  const attackerStrength = Math.floor(calculateFactionStrength(state, faction) * 0.3); // Commit 30% of forces
   const defenderStrength = target.population * 10;
 
   // Only attack if we have reasonable chance
-  if (attackerStrength < defenderStrength * 0.5) return;
+  if (attackerStrength < defenderStrength * 0.3) return;
 
-  // Queue the attack
+  // Start the siege
   faction.resources.production -= ATTACK_COST;
 
-  const battle: PendingBattle = {
-    id: `battle_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-    attackerId: faction.id,
-    defenderId: target.owner!,
-    territoryId: target.id,
-    attackerStrength,
-    defenderStrength,
-    startedAtTick: state.tick,
-  };
+  const result = startSiege(state, faction.id, target.id, attackerStrength);
 
-  state.pendingBattles.push(battle);
-  console.log(`[AI] ${faction.name} attacks ${defender.name}'s territory ${target.id}`);
+  if (result.success && result.siege) {
+    console.log(`[AI] ${faction.name} starts siege on ${defender.name}'s territory ${target.id}`);
+    onSiegeEvent?.({
+      type: 'started',
+      siege: result.siege,
+      territoryId: target.id,
+      attackerFactionId: faction.id,
+      defenderFactionId: target.owner,
+    });
+  }
 }
 
 /**
- * Process defense - if own territory under threat, bolster defense
+ * Process defense - if own territory under siege, try to break it
  */
-function processDefense(state: GameState, faction: Faction): void {
-  // Check for incoming attacks
+function processDefense(
+  state: GameState,
+  faction: Faction,
+  onSiegeEvent?: OnSiegeEvent
+): void {
+  // Get territories under siege
+  const siegesAgainstUs = getTerritoriesUnderSiege(state, faction.id);
+
+  if (siegesAgainstUs.length === 0) return;
+
+  for (const siege of siegesAgainstUs) {
+    const territory = state.territories.get(siege.territoryId);
+    if (!territory) continue;
+
+    // Calculate our defensive strength
+    const defenseStrength = calculateFactionStrength(state, faction) * 0.5;
+
+    // AI retreat logic: if siege is at 90%+ progress and we're significantly outmatched
+    if (siege.progress >= siege.requiredProgress * 0.9) {
+      if (defenseStrength < siege.attackerStrength * 0.3) {
+        // Territory is lost, don't waste resources
+        console.log(`[AI] ${faction.name} abandons defense of territory ${siege.territoryId} (hopeless)`);
+        continue;
+      }
+    }
+
+    // Try to break the siege if we have enough resources and strength
+    if (faction.resources.production >= 30 && defenseStrength > siege.attackerStrength * 0.8) {
+      faction.resources.production -= 30;
+
+      // Attempt to break siege - success based on strength ratio
+      const successChance = defenseStrength / (siege.attackerStrength + defenseStrength);
+      if (Math.random() < successChance) {
+        breakSiege(state, siege.id, onSiegeEvent);
+        console.log(`[AI] ${faction.name} broke the siege on territory ${siege.territoryId}!`);
+      } else {
+        // Failed to break siege, but reduced attacker strength
+        siege.attackerStrength = Math.floor(siege.attackerStrength * 0.8);
+        console.log(`[AI] ${faction.name} failed to break siege but weakened attackers`);
+      }
+    }
+  }
+
+  // Legacy support for pending battles (will be phased out)
   const incomingAttacks = state.pendingBattles.filter(
     (b) => b.defenderId === faction.id
   );
 
-  if (incomingAttacks.length === 0) return;
-
-  // For now, just increase defender strength if we have resources
   for (const battle of incomingAttacks) {
     if (faction.resources.production >= 10) {
       faction.resources.production -= 10;
@@ -195,13 +256,16 @@ function calculateFactionStrength(state: GameState, faction: Faction): number {
 /**
  * Process all AI factions
  */
-export function processAllAI(state: GameState): void {
+export function processAllAI(state: GameState, onSiegeEvent?: OnSiegeEvent): void {
   for (const faction of state.factions.values()) {
     // Skip player-controlled factions (deityId not 'ai')
     if (faction.deityId !== 'ai') continue;
-    processAIDecision(state, faction);
+    processAIDecision(state, faction, onSiegeEvent);
   }
 }
+
+// Re-export siege event type for use in other modules
+export type { OnSiegeEvent };
 
 /**
  * Resolve pending battles

@@ -312,3 +312,65 @@ All tasks in "1.2 Divine Intervention System" have been implemented:
 Total: 19/19 tasks complete
 
 ---
+
+## Implement Persistence Layer (Section 1.3)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/db/migrations/001_initial_schema.sql` — SQL schema for shards, factions, territories, sieges, notifications tables
+- `apps/server/src/db/types.ts` — TypeScript types for database rows
+- `apps/server/src/db/repositories.ts` — Repository classes with CRUD operations and batch updates
+- `apps/server/src/db/persistence.ts` — State save/load service with diff-based updates
+- `apps/server/src/index.ts` — Updated with graceful shutdown handlers and persistence integration
+- `apps/server/src/simulation/ticker.ts` — Added onSiegeProgress and onPersistence phases
+- `packages/shared/src/index.ts` — Added Siege, Notification types, siege constants, message types
+
+**Implementation Notes:**
+### Database Schema
+- Created 5 tables: shards, factions, territories, sieges, notifications
+- Added indexes for common queries (shard_id, owner_id, status)
+- Implemented updated_at triggers for automatic timestamp updates
+
+### Persistence Service
+- Diff-based saves every 10 ticks for efficiency
+- Full state save on graceful shutdown
+- State load from Supabase on server start
+- Supports creating new shards with initial game state
+
+### Graceful Shutdown
+- Handles SIGINT, SIGTERM, and uncaught exceptions
+- Stops ticker, saves full state, closes connections
+- 10-second timeout before forced exit
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## Implement Siege System (Section 1.3)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/simulation/siege.ts` — Complete siege system implementation
+- `apps/server/src/simulation/ai.ts` — Updated to use sieges instead of instant capture
+- `packages/shared/src/index.ts` — Added Siege type and siege constants
+
+**Implementation Notes:**
+### Siege Mechanics
+- 24 hours for undefended territories (86400 ticks at 1 tick/sec)
+- 48+ hours for defended territories (2x multiplier)
+- Progress based on attacker vs defender strength ratio
+- Supports siege breaking by defender
+
+### AI Updates
+- AI now starts sieges instead of instant captures
+- AI defends sieged territories
+- AI retreat logic abandons hopeless sieges (90%+ progress, outmatched)
+- AI can reinforce existing sieges
+
+### Siege Events
+- Notifications at 50% and 90% progress milestones
+- Events for siege started, completed, and broken
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
