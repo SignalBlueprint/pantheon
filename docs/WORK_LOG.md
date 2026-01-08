@@ -79,3 +79,23 @@ Added comprehensive TypeScript types:
 Successfully ran `pnpm --filter @pantheon/shared build` - TypeScript compiled without errors.
 
 ---
+
+## Configure Supabase project
+**Completed:** 2026-01-08
+**Files Changed:**
+- `.env.local.example` — created template with Supabase environment variables
+- `apps/server/src/db/supabase.ts` — created Supabase client configuration
+- `apps/server/src/index.ts` — added dotenv loading and database status in health check
+- `apps/server/package.json` — added @supabase/supabase-js and dotenv dependencies
+
+**Implementation Notes:**
+- Created `.env.local.example` as template for Supabase credentials
+- Added Supabase JS client v2.39 with service role key for server-side operations
+- Gracefully handles missing credentials (warns but doesn't crash)
+- Health check endpoint now shows database connection status
+- User needs to: create Supabase project, copy .env.local.example to .env.local, add credentials
+
+**Verification:**
+Server starts successfully, health check returns `{"status":"ok","timestamp":...,"database":"not configured"}` when credentials are not set.
+
+---
