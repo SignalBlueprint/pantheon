@@ -424,3 +424,71 @@ All tasks in "1.3 Offline Persistence with Slow Sieges" have been implemented:
 Total: 17/18 tasks complete (push notification integration marked as future scope)
 
 ---
+
+## Implement Diplomacy System (Section 2.1)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/db/migrations/002_diplomacy_schema.sql` — SQL schema for relations, messages, diplomatic_events tables
+- `apps/server/src/db/types.ts` — Added DbRelation, DbMessage, DbDiplomaticEvent types
+- `apps/server/src/db/repositories.ts` — Added relationRepo, messageRepo, diplomaticEventRepo
+- `apps/server/src/systems/diplomacy.ts` — Diplomacy service with war, peace, alliance logic
+- `apps/server/src/net/socket.ts` — WebSocket handlers for diplomatic actions
+- `apps/server/src/simulation/ai.ts` — AI diplomacy: declares wars, respects alliances
+- `apps/server/src/simulation/ticker.ts` — Added relations to initial game state
+- `apps/server/src/db/persistence.ts` — Added relations to state save/load
+- `apps/server/src/world/faction.ts` — Added reputation field to factions
+- `packages/shared/src/index.ts` — Added diplomacy types, constants, and message types
+- `apps/web/src/components/ui/DiplomacyPanel.tsx` — Diplomacy UI component
+
+**Implementation Notes:**
+### Database Schema
+- relations table: tracks faction-to-faction relationships with status and pending proposals
+- messages table: for deity-to-deity communication (infrastructure ready)
+- diplomatic_events table: logs all diplomatic actions for history
+
+### Diplomacy Service
+- `declareWar()` - costs 50 divine power, changes status to war
+- `offerPeace()` - costs 20 divine power, creates proposal
+- `respondToPeace()` - accepts (creates truce) or rejects
+- `proposeAlliance()` - costs 30 divine power, creates proposal
+- `respondToAlliance()` - accepts or rejects alliance
+- `breakAlliance()` - costs 40 divine power, -20 reputation
+
+### Alliance Benefits
+- Factions must be at war to attack each other
+- AI respects diplomatic relations when selecting targets
+- Allied territories cannot be attacked
+- Truce lasts 6 hours after peace is accepted
+
+### AI Diplomacy
+- AI checks diplomatic relations before attacking
+- AI declares war on weaker adjacent factions when aggressive
+- AI filters enemies vs potential targets based on war status
+
+### WebSocket Integration
+- Added handlers for: declare_war, offer_peace, propose_alliance, break_alliance, respond_proposal
+- Broadcasts diplomatic events to all clients
+- DiplomacyPanel UI component with action buttons and proposal handling
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## HORIZON 2 SECTION 2.1 MOSTLY COMPLETE
+**Completed:** 2026-01-08
+
+Most tasks in "2.1 Diplomacy and Deity Alliances" have been implemented:
+- Diplomatic Relations (5/5 tasks)
+- Alliance Benefits (4/4 tasks)
+- Diplomacy UI (3/4 tasks - message system infrastructure ready but not fully implemented)
+- AI Diplomacy (2/4 tasks - basic war declaration and alliance respect implemented)
+
+Total: 14/17 tasks complete
+
+Remaining for future:
+- Create message system (deity-to-deity text messages)
+- AI accepts/rejects proposals (currently only initiates)
+- AI breaks losing alliances
+
+---

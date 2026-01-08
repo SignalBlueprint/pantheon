@@ -19,6 +19,13 @@ import {
   DbSiegeUpdate,
   DbNotification,
   DbNotificationInsert,
+  DbRelation,
+  DbRelationInsert,
+  DbRelationUpdate,
+  DbMessage,
+  DbMessageInsert,
+  DbDiplomaticEvent,
+  DbDiplomaticEventInsert,
 } from './types.js';
 
 /**
@@ -424,5 +431,236 @@ export const notificationRepo = {
       .eq('read', false);
     if (error) throw error;
     return count || 0;
+  },
+};
+
+/**
+ * Relations repository
+ */
+export const relationRepo = {
+  async getByShard(shardId: string): Promise<DbRelation[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('relations')
+      .select('*')
+      .eq('shard_id', shardId);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByFactions(shardId: string, factionA: string, factionB: string): Promise<DbRelation | null> {
+    if (!supabase) return null;
+    // Ensure consistent ordering (faction_a < faction_b)
+    const [a, b] = factionA < factionB ? [factionA, factionB] : [factionB, factionA];
+    const { data, error } = await supabase
+      .from('relations')
+      .select('*')
+      .eq('shard_id', shardId)
+      .eq('faction_a', a)
+      .eq('faction_b', b)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async getForFaction(shardId: string, factionId: string): Promise<DbRelation[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('relations')
+      .select('*')
+      .eq('shard_id', shardId)
+      .or(`faction_a.eq.${factionId},faction_b.eq.${factionId}`);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(relation: DbRelationInsert): Promise<DbRelation> {
+    if (!supabase) throw new Error('Supabase not configured');
+    // Ensure consistent ordering
+    const [a, b] = relation.faction_a < relation.faction_b
+      ? [relation.faction_a, relation.faction_b]
+      : [relation.faction_b, relation.faction_a];
+    const { data, error } = await supabase
+      .from('relations')
+      .insert({ ...relation, faction_a: a, faction_b: b })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: DbRelationUpdate): Promise<DbRelation> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('relations')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async upsertByFactions(
+    shardId: string,
+    factionA: string,
+    factionB: string,
+    updates: DbRelationUpdate
+  ): Promise<DbRelation> {
+    if (!supabase) throw new Error('Supabase not configured');
+    // Ensure consistent ordering
+    const [a, b] = factionA < factionB ? [factionA, factionB] : [factionB, factionA];
+
+    // Check if relation exists
+    const existing = await this.getByFactions(shardId, a, b);
+    if (existing) {
+      return this.update(existing.id, updates);
+    }
+
+    // Create new relation
+    return this.create({
+      shard_id: shardId,
+      faction_a: a,
+      faction_b: b,
+      status: updates.status || 'neutral',
+      since_tick: updates.since_tick || 0,
+      proposed_by: updates.proposed_by || null,
+      proposal_type: updates.proposal_type || null,
+    });
+  },
+};
+
+/**
+ * Messages repository
+ */
+export const messageRepo = {
+  async getByShard(shardId: string, limit = 100): Promise<DbMessage[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('shard_id', shardId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByReceiver(receiverId: string, limit = 50): Promise<DbMessage[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('receiver_id', receiverId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getUnreadByReceiver(receiverId: string): Promise<DbMessage[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('receiver_id', receiverId)
+      .eq('read', false)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getConversation(factionA: string, factionB: string, limit = 50): Promise<DbMessage[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .or(`and(sender_id.eq.${factionA},receiver_id.eq.${factionB}),and(sender_id.eq.${factionB},receiver_id.eq.${factionA})`)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(message: DbMessageInsert): Promise<DbMessage> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('messages')
+      .insert(message)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async markAsRead(id: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('messages')
+      .update({ read: true })
+      .eq('id', id);
+    if (error) throw error;
+  },
+
+  async markAllAsRead(receiverId: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('messages')
+      .update({ read: true })
+      .eq('receiver_id', receiverId)
+      .eq('read', false);
+    if (error) throw error;
+  },
+
+  async getUnreadCount(receiverId: string): Promise<number> {
+    if (!supabase) return 0;
+    const { count, error } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('receiver_id', receiverId)
+      .eq('read', false);
+    if (error) throw error;
+    return count || 0;
+  },
+};
+
+/**
+ * Diplomatic events repository
+ */
+export const diplomaticEventRepo = {
+  async getByShard(shardId: string, limit = 100): Promise<DbDiplomaticEvent[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('diplomatic_events')
+      .select('*')
+      .eq('shard_id', shardId)
+      .order('tick', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByFaction(shardId: string, factionId: string, limit = 50): Promise<DbDiplomaticEvent[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('diplomatic_events')
+      .select('*')
+      .eq('shard_id', shardId)
+      .or(`initiator_id.eq.${factionId},target_id.eq.${factionId}`)
+      .order('tick', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(event: DbDiplomaticEventInsert): Promise<DbDiplomaticEvent> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('diplomatic_events')
+      .insert(event)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 };

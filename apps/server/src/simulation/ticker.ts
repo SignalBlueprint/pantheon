@@ -248,5 +248,6 @@ export function createInitialGameState(): GameState {
     factions: new Map(),
     pendingBattles: [],
     sieges: new Map(),
+    relations: new Map(),
   };
 }

@@ -19,6 +19,15 @@ export const DIVINE_POWER_START = 100;
 export const DIVINE_POWER_MAX = 200;
 export const DIVINE_POWER_REGEN_PER_TEMPLE = 1; // +1 per tick per temple
 
+// Diplomacy constants
+export const DIPLOMACY_WAR_COST = 50; // Divine power to declare war
+export const DIPLOMACY_PEACE_COST = 20; // Divine power to offer peace
+export const DIPLOMACY_ALLIANCE_COST = 30; // Divine power to propose alliance
+export const DIPLOMACY_BREAK_ALLIANCE_COST = 40; // Divine power to break alliance
+export const DIPLOMACY_REPUTATION_LOSS_BREAK = 20; // Reputation loss for breaking alliance
+export const DIPLOMACY_TRUCE_DURATION_TICKS = 3600 * 6; // 6 hours truce after peace
+export const DIPLOMACY_ALLIANCE_COOLDOWN_TICKS = 3600 * 24; // 24 hours before new alliance after breaking
+
 // Resource types
 export type ResourceType = 'food' | 'production' | 'gold' | 'faith';
 export type ResourceFocus = 'food' | 'production' | 'balanced';
@@ -74,6 +83,7 @@ export interface Faction {
     faith: number;
   };
   divinePower: number;  // starts at 100, caps at 200
+  reputation: number;   // 0-100, affects diplomatic interactions
 }
 
 // Battle type for pending combat resolution
@@ -103,6 +113,60 @@ export interface Siege {
   status: SiegeStatus;
 }
 
+// Diplomatic relation status
+export type RelationStatus = 'neutral' | 'war' | 'alliance' | 'truce';
+
+// Diplomatic proposal types
+export type ProposalType = 'alliance' | 'peace' | 'truce';
+
+// Diplomatic relation between two factions
+export interface DiplomaticRelation {
+  id: string;
+  factionA: string;       // faction ID (always < factionB for consistency)
+  factionB: string;       // faction ID
+  status: RelationStatus;
+  sinceTick: number;      // tick when this relation was established
+  proposedBy?: string;    // faction ID if there's a pending proposal
+  proposalType?: ProposalType;
+}
+
+// Diplomatic event types
+export type DiplomaticEventType =
+  | 'war_declared'
+  | 'peace_offered'
+  | 'peace_accepted'
+  | 'peace_rejected'
+  | 'alliance_proposed'
+  | 'alliance_formed'
+  | 'alliance_broken'
+  | 'truce_started'
+  | 'truce_ended';
+
+// Diplomatic event for history
+export interface DiplomaticEvent {
+  id: string;
+  eventType: DiplomaticEventType;
+  initiatorId: string;    // faction ID
+  targetId: string;       // faction ID
+  tick: number;
+  data?: Record<string, unknown>;
+}
+
+// Message types for deity communication
+export type DiplomaticMessageType = 'text' | 'proposal' | 'response' | 'system';
+
+// Message between deities
+export interface DiplomaticMessage {
+  id: string;
+  senderId: string;       // faction ID
+  receiverId: string;     // faction ID
+  messageType: DiplomaticMessageType;
+  content: string;
+  data?: Record<string, unknown>;
+  read: boolean;
+  createdAt: number;      // timestamp
+}
+
 // Notification types
 export type NotificationType =
   | 'siege_started'
@@ -114,7 +178,11 @@ export type NotificationType =
   | 'miracle_cast'
   | 'war_declared'
   | 'peace_offered'
-  | 'alliance_formed';
+  | 'alliance_formed'
+  | 'alliance_broken'
+  | 'peace_accepted'
+  | 'peace_rejected'
+  | 'truce_started';
 
 // Notification type for in-game alerts
 export interface Notification {
@@ -135,6 +203,7 @@ export interface GameState {
   factions: Map<string, Faction>;
   pendingBattles: PendingBattle[];
   sieges: Map<string, Siege>; // keyed by siege ID
+  relations: Map<string, DiplomaticRelation>; // keyed by relation ID
 }
 
 // Serializable version for JSON transport
@@ -145,6 +214,7 @@ export interface SerializedGameState {
   factions: Record<string, Faction>;
   pendingBattles: PendingBattle[];
   sieges: Record<string, Siege>;
+  relations: Record<string, DiplomaticRelation>;
 }
 
 // Message types for WebSocket communication
@@ -165,7 +235,15 @@ export type MessageType =
   | 'siege_progress'
   | 'siege_complete'
   | 'siege_broken'
-  | 'notification';
+  | 'notification'
+  | 'declare_war'
+  | 'offer_peace'
+  | 'propose_alliance'
+  | 'break_alliance'
+  | 'respond_proposal'
+  | 'diplomatic_event'
+  | 'send_message'
+  | 'relation_update';
 
 export interface GameMessage {
   type: MessageType;

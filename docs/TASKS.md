@@ -191,31 +191,31 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Diplomatic Relations
 
-- [ ] Create `relations` table — `{ faction_a, faction_b, status: 'neutral' | 'war' | 'alliance' | 'truce', since_tick }`
-- [ ] Default all factions to neutral — can pass through but not attack without declaring war
-- [ ] Implement war declaration — costs divine power, enables attacks, notifies target
-- [ ] Implement peace offer — sender proposes, receiver accepts/rejects
-- [ ] Implement alliance — shared vision, can't attack each other, trade bonus
+- [x] Create `relations` table — `{ faction_a, faction_b, status: 'neutral' | 'war' | 'alliance' | 'truce', since_tick }`
+- [x] Default all factions to neutral — can pass through but not attack without declaring war
+- [x] Implement war declaration — costs divine power, enables attacks, notifies target
+- [x] Implement peace offer — sender proposes, receiver accepts/rejects
+- [x] Implement alliance — shared vision, can't attack each other, trade bonus
 
 #### Alliance Benefits
 
-- [ ] Shared map vision — see allied faction's territories and armies
-- [ ] Trade routes — allied factions automatically trade surplus resources
-- [ ] Combined defense — allied armies can defend each other's territories
-- [ ] Alliance breaking — costs divine power, reputation penalty, cooldown before new alliance
+- [x] Shared map vision — see allied faction's territories and armies
+- [x] Trade routes — allied factions automatically trade surplus resources
+- [x] Combined defense — allied armies can defend each other's territories
+- [x] Alliance breaking — costs divine power, reputation penalty, cooldown before new alliance
 
 #### Diplomacy UI
 
-- [ ] Create diplomacy panel in `apps/web/src/components/ui/DiplomacyPanel.tsx` — list all factions with current relation
-- [ ] Add relation action buttons — "Declare War", "Propose Alliance", "Offer Peace"
+- [x] Create diplomacy panel in `apps/web/src/components/ui/DiplomacyPanel.tsx` — list all factions with current relation
+- [x] Add relation action buttons — "Declare War", "Propose Alliance", "Offer Peace"
 - [ ] Create message system — simple text messages between deities
-- [ ] Show diplomatic history — "X declared war on Y", "A and B formed alliance"
+- [x] Show diplomatic history — "X declared war on Y", "A and B formed alliance"
 
 #### AI Diplomacy
 
-- [ ] AI evaluates alliance value — considers shared enemies, relative power, border length
+- [x] AI evaluates alliance value — considers shared enemies, relative power, border length
 - [ ] AI accepts/rejects proposals — based on policy settings and strategic situation
-- [ ] AI declares wars — when aggression high and target is weak
+- [x] AI declares wars — when aggression high and target is weak
 - [ ] AI breaks losing alliances — if ally is dragging them into unwinnable war
 
 **New Infrastructure Required:**

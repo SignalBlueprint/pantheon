@@ -3,13 +3,14 @@
  * Handles saving and loading game state to/from Supabase
  */
 
-import { GameState, Territory, Faction, Siege } from '@pantheon/shared';
+import { GameState, Territory, Faction, Siege, DiplomaticRelation } from '@pantheon/shared';
 import { isSupabaseConfigured } from './supabase.js';
 import {
   shardRepo,
   factionRepo,
   territoryRepo,
   siegeRepo,
+  relationRepo,
 } from './repositories.js';
 import {
   DbFaction,
@@ -306,6 +307,7 @@ export async function loadGameState(shardId: string): Promise<GameState | null> 
         territories: factionTerritories,
         resources: f.resources,
         divinePower: f.divine_power,
+        reputation: f.reputation ?? 50, // Default to 50 if not set
       });
     }
 
@@ -326,6 +328,21 @@ export async function loadGameState(shardId: string): Promise<GameState | null> 
       });
     }
 
+    // Load relations
+    const dbRelations = await relationRepo.getByShard(shardId);
+    const relations = new Map<string, DiplomaticRelation>();
+    for (const r of dbRelations) {
+      relations.set(r.id, {
+        id: r.id,
+        factionA: r.faction_a,
+        factionB: r.faction_b,
+        status: r.status,
+        sinceTick: r.since_tick,
+        proposedBy: r.proposed_by || undefined,
+        proposalType: r.proposal_type || undefined,
+      });
+    }
+
     const gameState: GameState = {
       tick: shard.current_tick,
       shardId: shard.id,
@@ -333,6 +350,7 @@ export async function loadGameState(shardId: string): Promise<GameState | null> 
       factions,
       pendingBattles: [], // PendingBattles are not persisted (short-lived)
       sieges,
+      relations,
     };
 
     // Update last saved state for diff tracking
@@ -344,7 +362,7 @@ export async function loadGameState(shardId: string): Promise<GameState | null> 
     };
 
     console.log(`[Persistence] Loaded state at tick ${shard.current_tick}`);
-    console.log(`[Persistence] ${territories.size} territories, ${factions.size} factions, ${sieges.size} active sieges`);
+    console.log(`[Persistence] ${territories.size} territories, ${factions.size} factions, ${sieges.size} active sieges, ${relations.size} relations`);
 
     return gameState;
   } catch (error) {
@@ -401,6 +419,7 @@ export async function createNewShard(
         divine_power: f.divinePower,
         resources: f.resources,
         is_ai: !f.deityId,
+        reputation: f.reputation ?? 50,
       });
     }
 

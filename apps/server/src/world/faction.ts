@@ -52,6 +52,7 @@ export function createFaction(
     territories: [startingTerritory.id],
     resources: { ...STARTING_RESOURCES },
     divinePower: DIVINE_POWER_START,
+    reputation: 50, // Start with neutral reputation
   };
 
   return faction;

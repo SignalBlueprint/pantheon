@@ -3,7 +3,7 @@
  * These mirror the SQL schema in migrations/001_initial_schema.sql
  */
 
-import { Policy, ResourceFocus, BuildingType, ActiveEffect } from '@pantheon/shared';
+import { Policy, ResourceFocus, BuildingType, ActiveEffect, RelationStatus, ProposalType, DiplomaticEventType, DiplomaticMessageType, NotificationType } from '@pantheon/shared';
 
 // Shard status enum
 export type ShardStatus = 'active' | 'paused' | 'ended' | 'archived';
@@ -11,18 +11,8 @@ export type ShardStatus = 'active' | 'paused' | 'ended' | 'archived';
 // Siege status enum
 export type SiegeStatus = 'active' | 'completed' | 'broken' | 'abandoned';
 
-// Notification types
-export type NotificationType =
-  | 'siege_started'
-  | 'siege_50'
-  | 'siege_90'
-  | 'siege_complete'
-  | 'territory_lost'
-  | 'territory_gained'
-  | 'miracle_cast'
-  | 'war_declared'
-  | 'peace_offered'
-  | 'alliance_formed';
+// Re-export NotificationType from shared to maintain compatibility
+export type { NotificationType };
 
 /**
  * Database row for shards table
@@ -54,6 +44,7 @@ export interface DbFaction {
     faith: number;
   };
   is_ai: boolean;
+  reputation: number;
   created_at: string;
   updated_at: string;
 }
@@ -125,3 +116,56 @@ export type DbShardUpdate = Partial<Omit<DbShard, 'id' | 'created_at' | 'updated
 export type DbFactionUpdate = Partial<Omit<DbFaction, 'id' | 'shard_id' | 'created_at' | 'updated_at'>>;
 export type DbTerritoryUpdate = Partial<Omit<DbTerritory, 'id' | 'shard_id' | 'created_at' | 'updated_at'>>;
 export type DbSiegeUpdate = Partial<Omit<DbSiege, 'id' | 'shard_id' | 'started_at' | 'updated_at'>>;
+
+/**
+ * Database row for relations table
+ */
+export interface DbRelation {
+  id: string;
+  shard_id: string;
+  faction_a: string;
+  faction_b: string;
+  status: RelationStatus;
+  since_tick: number;
+  proposed_by: string | null;
+  proposal_type: ProposalType | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Database row for messages table
+ */
+export interface DbMessage {
+  id: string;
+  shard_id: string;
+  sender_id: string;
+  receiver_id: string;
+  message_type: DiplomaticMessageType;
+  content: string;
+  data: Record<string, unknown>;
+  read: boolean;
+  created_at: string;
+}
+
+/**
+ * Database row for diplomatic_events table
+ */
+export interface DbDiplomaticEvent {
+  id: string;
+  shard_id: string;
+  event_type: DiplomaticEventType;
+  initiator_id: string;
+  target_id: string;
+  tick: number;
+  data: Record<string, unknown>;
+  created_at: string;
+}
+
+// Insert types for new tables
+export type DbRelationInsert = Omit<DbRelation, 'id' | 'created_at' | 'updated_at'>;
+export type DbMessageInsert = Omit<DbMessage, 'id' | 'created_at'>;
+export type DbDiplomaticEventInsert = Omit<DbDiplomaticEvent, 'id' | 'created_at'>;
+
+// Update types for new tables
+export type DbRelationUpdate = Partial<Omit<DbRelation, 'id' | 'shard_id' | 'faction_a' | 'faction_b' | 'created_at' | 'updated_at'>>;

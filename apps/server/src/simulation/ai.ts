@@ -12,6 +12,7 @@ import {
   hexNeighbors,
   hexId,
   parseHexId,
+  DIPLOMACY_WAR_COST,
 } from '@pantheon/shared';
 import {
   startSiege,
@@ -23,6 +24,14 @@ import {
   SiegeEvent,
   OnSiegeEvent,
 } from './siege.js';
+import {
+  canAttack,
+  areAllied,
+  getAllies,
+  getEnemies,
+  getRelationStatus,
+  declareWar,
+} from '../systems/diplomacy.js';
 
 // AI decision costs
 const EXPANSION_COST = 20; // Production cost to claim a territory
@@ -41,13 +50,15 @@ function addRandomness(value: number): number {
 
 /**
  * Get adjacent territories to a faction's controlled territories
+ * Filters based on diplomatic relations
  */
 function getAdjacentTerritories(
   state: GameState,
   faction: Faction
-): { unclaimed: Territory[]; enemy: Territory[] } {
+): { unclaimed: Territory[]; enemy: Territory[]; potentialTargets: Territory[] } {
   const unclaimed: Territory[] = [];
-  const enemy: Territory[] = [];
+  const enemy: Territory[] = []; // Only factions we're at war with
+  const potentialTargets: Territory[] = []; // Factions we're neutral with
   const seen = new Set<string>();
 
   for (const territoryId of faction.territories) {
@@ -67,12 +78,23 @@ function getAdjacentTerritories(
       if (neighborTerritory.owner === null) {
         unclaimed.push(neighborTerritory);
       } else {
-        enemy.push(neighborTerritory);
+        // Check diplomatic relations
+        const ownerId = neighborTerritory.owner;
+        if (areAllied(state, faction.id, ownerId)) {
+          // Allied territory - skip
+          continue;
+        } else if (canAttack(state, faction.id, ownerId)) {
+          // At war - valid target
+          enemy.push(neighborTerritory);
+        } else {
+          // Neutral - potential target (need to declare war first)
+          potentialTargets.push(neighborTerritory);
+        }
       }
     }
   }
 
-  return { unclaimed, enemy };
+  return { unclaimed, enemy, potentialTargets };
 }
 
 /**
@@ -84,7 +106,7 @@ export function processAIDecision(
   onSiegeEvent?: OnSiegeEvent
 ): void {
   const { policies, resources } = faction;
-  const { unclaimed, enemy } = getAdjacentTerritories(state, faction);
+  const { unclaimed, enemy, potentialTargets } = getAdjacentTerritories(state, faction);
 
   // Defense logic first - if own territory under threat
   processDefense(state, faction, onSiegeEvent);
@@ -95,8 +117,64 @@ export function processAIDecision(
   }
 
   // Aggression logic - if aggression > 50 and adjacent enemy territory
-  if (addRandomness(policies.aggression) > 50 && enemy.length > 0) {
-    processAggression(state, faction, enemy, onSiegeEvent);
+  if (addRandomness(policies.aggression) > 50) {
+    if (enemy.length > 0) {
+      // We have enemies at war - attack them
+      processAggression(state, faction, enemy, onSiegeEvent);
+    } else if (potentialTargets.length > 0 && faction.divinePower >= DIPLOMACY_WAR_COST) {
+      // No current enemies but high aggression - consider declaring war
+      processDiplomacy(state, faction, potentialTargets);
+    }
+  }
+}
+
+/**
+ * Process AI diplomacy - declare war when aggressive and profitable
+ */
+function processDiplomacy(
+  state: GameState,
+  faction: Faction,
+  potentialTargets: Territory[]
+): void {
+  // Pick a weaker target to declare war on
+  const targetFactions = new Map<string, number>();
+
+  for (const territory of potentialTargets) {
+    if (!territory.owner) continue;
+    targetFactions.set(
+      territory.owner,
+      (targetFactions.get(territory.owner) || 0) + 1
+    );
+  }
+
+  // Find the faction with the most adjacent territories that is weaker than us
+  const ourStrength = calculateFactionStrength(state, faction);
+  let bestTarget: string | null = null;
+  let bestScore = 0;
+
+  for (const [factionId, adjacentCount] of targetFactions) {
+    const targetFaction = state.factions.get(factionId);
+    if (!targetFaction) continue;
+
+    const theirStrength = calculateFactionStrength(state, targetFaction);
+
+    // Only target weaker factions (at least 30% weaker)
+    if (theirStrength < ourStrength * 0.7) {
+      // Score based on adjacency and weakness
+      const score = adjacentCount * (1 - theirStrength / ourStrength);
+      if (score > bestScore) {
+        bestScore = score;
+        bestTarget = factionId;
+      }
+    }
+  }
+
+  if (bestTarget) {
+    const target = state.factions.get(bestTarget);
+    const result = declareWar(state, faction.id, bestTarget);
+    if (result.success) {
+      console.log(`[AI Diplomacy] ${faction.name} declared war on ${target?.name}`);
+    }
   }
 }
 
