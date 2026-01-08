@@ -851,3 +851,65 @@ All tasks in "Moonshot: The Living World Archive - Phase 1 Foundation" have been
 Total: 5/5 tasks complete
 
 ---
+
+## Implement Living World Archive - Phase 2 Core Feature (Moonshot)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/systems/replay.ts` — Complete replay system with state reconstruction
+- `apps/web/src/components/ui/ReplayViewer.tsx` — Time-scrubbing viewer UI component
+- `packages/shared/src/index.ts` — Added PLAYBACK_SPEEDS, PlaybackSpeed, ReplayMetadata, ReplayStateInfo types
+- `apps/server/src/index.ts` — Added replay API endpoints
+
+**Implementation Notes:**
+### Replay State Machine (replay.ts)
+- `ReplayState` interface: tracks shard, ticks, game state, events, playback
+- `getReplayMetadata()`: fetches metadata from event batches or log
+- `initializeReplay()`: loads all events and creates initial game state
+- `applyEventsToTick()`: reconstructs state by applying events sequentially
+- `applyEvent()`: handles 15+ event types for full state reconstruction
+  - territory_claimed/captured, faction_created/eliminated
+  - siege_started/progress/completed/broken/abandoned
+  - divine_power_changed, resources_changed, population_changed
+  - diplomatic events, specialization_chosen
+- `seekToTick()`: jumps to any point (resets and replays if going backwards)
+- `findInterestingMoments()`: identifies significant events for highlight markers
+
+### Playback Controls
+- 4 speeds: 1x, 10x, 100x, 1000x (ticks per second)
+- Play/pause with automatic progression
+- Forward/rewind 10 seconds
+- Skip to next/previous interesting moment
+
+### ReplayViewer UI Component
+- Full-screen overlay with dark theme
+- Timeline slider with progress percentage
+- Interesting moment markers (amber dots on timeline)
+- Event log sidebar showing events at current tick
+- Playback speed buttons
+- Event type icons for visual distinction
+- Responsive controls for play/pause, seek, skip
+
+### API Endpoints
+- GET /api/replay/:shardId/metadata — fetch replay metadata
+- GET /api/replay/:shardId/events — fetch events for tick range
+- GET /api/replay/:shardId/state — get current replay state
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## MOONSHOT PHASE 2 COMPLETE
+**Completed:** 2026-01-08
+
+All tasks in "Moonshot: The Living World Archive - Phase 2 Core Feature" have been implemented:
+- Build replay loader (1/1)
+- Create replay state machine (1/1)
+- Implement time scrubbing (1/1)
+- Add playback speed controls (1/1)
+- Build replay viewer UI (1/1)
+- Implement smooth interpolation (0/1) — deferred to polish phase
+
+Total: 5/6 tasks complete (smooth interpolation deferred)
+
+---

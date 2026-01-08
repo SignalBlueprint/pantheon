@@ -44,6 +44,13 @@ import {
   blessChampion,
   assignChampionToArmy,
 } from './systems/champions.js';
+import {
+  getReplayMetadata,
+  initializeReplay,
+  getEventsAtTick,
+  findInterestingMoments,
+} from './systems/replay.js';
+import { getEventsInRange } from './systems/eventlog.js';
 import { CHAMPION_BLESS_COST } from '@pantheon/shared';
 
 const app = express();
@@ -414,6 +421,87 @@ app.post('/api/champions/:championId/assign', async (req, res) => {
   } catch (error) {
     console.error('[API] Error assigning champion:', error);
     res.status(500).json({ error: 'Failed to assign champion' });
+  }
+});
+
+// Replay API endpoints
+
+// GET /api/replay/:shardId/metadata - Get replay metadata
+app.get('/api/replay/:shardId/metadata', async (req, res) => {
+  const { shardId } = req.params;
+
+  try {
+    const metadata = await getReplayMetadata(shardId);
+    if (!metadata) {
+      return res.status(404).json({ error: 'No replay data found' });
+    }
+
+    // Also get interesting moments if we have a replay
+    const replay = await initializeReplay(shardId);
+    const interestingMoments = replay ? findInterestingMoments(replay) : [];
+
+    res.json({ metadata, interestingMoments });
+  } catch (error) {
+    console.error('[API] Error fetching replay metadata:', error);
+    res.status(500).json({ error: 'Failed to fetch replay metadata' });
+  }
+});
+
+// GET /api/replay/:shardId/events - Get events for a tick range
+app.get('/api/replay/:shardId/events', async (req, res) => {
+  const { shardId } = req.params;
+  const tick = parseInt(req.query.tick as string) || 0;
+  const range = parseInt(req.query.range as string) || 100;
+
+  try {
+    const events = await getEventsInRange(shardId, Math.max(0, tick - range / 2), tick + range / 2);
+    res.json({ events });
+  } catch (error) {
+    console.error('[API] Error fetching replay events:', error);
+    res.status(500).json({ error: 'Failed to fetch events' });
+  }
+});
+
+// GET /api/replay/:shardId/state - Get reconstructed state at tick
+app.get('/api/replay/:shardId/state', async (req, res) => {
+  const { shardId } = req.params;
+  const tick = parseInt(req.query.tick as string) || 0;
+
+  try {
+    const replay = await initializeReplay(shardId, tick);
+    if (!replay) {
+      return res.status(404).json({ error: 'No replay data found' });
+    }
+
+    // Serialize state for response
+    const state = {
+      tick: replay.currentTick,
+      factions: Array.from(replay.gameState.factions.entries()).map(([id, f]) => ({
+        id,
+        name: f.name,
+        color: f.color,
+        territories: f.territories.length,
+        divinePower: f.divinePower,
+      })),
+      territories: Array.from(replay.gameState.territories.entries()).map(([id, t]) => ({
+        id,
+        q: t.q,
+        r: t.r,
+        owner: t.owner,
+        population: t.population,
+      })),
+      sieges: Array.from(replay.gameState.sieges.entries()).map(([id, s]) => ({
+        id,
+        attackerId: s.attackerId,
+        territoryId: s.territoryId,
+        progress: s.progress,
+      })),
+    };
+
+    res.json({ state });
+  } catch (error) {
+    console.error('[API] Error fetching replay state:', error);
+    res.status(500).json({ error: 'Failed to fetch state' });
   }
 });
 

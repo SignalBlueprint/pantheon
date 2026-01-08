@@ -444,11 +444,11 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 **Goal:** Playback recorded history with time controls.
 
-- [ ] Build replay loader — fetch archived season data, decompress
-- [ ] Create replay state machine — reconstruct game state at any tick from events
-- [ ] Implement time scrubbing — slider to jump to any point in season
-- [ ] Add playback speed controls — 1x, 10x, 100x, 1000x speed
-- [ ] Build replay viewer UI — same map view but read-only, with timeline controls
+- [x] Build replay loader — fetch archived season data, decompress
+- [x] Create replay state machine — reconstruct game state at any tick from events
+- [x] Implement time scrubbing — slider to jump to any point in season
+- [x] Add playback speed controls — 1x, 10x, 100x, 1000x speed
+- [x] Build replay viewer UI — same map view but read-only, with timeline controls
 - [ ] Implement smooth interpolation — animate between ticks for visual clarity
 
 **Estimated Effort:** 24-30 hours

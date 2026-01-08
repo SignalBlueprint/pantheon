@@ -3,7 +3,8 @@
  * Manages the world tick cycle and dispatches to subsystems
  */
 
-import { GameState, Territory, Faction, TICK_RATE_MS, DIVINE_POWER_MAX, DIVINE_POWER_REGEN_PER_TEMPLE } from '@pantheon/shared';
+import { GameState, Territory, Faction, TICK_RATE_MS, DIVINE_POWER_MAX, DIVINE_POWER_REGEN_PER_TEMPLE, createInitialGameState } from '@pantheon/shared';
+export { createInitialGameState };
 
 // Tick phase callbacks
 export type TickPhase = (state: GameState) => void;
@@ -261,18 +262,4 @@ export class Ticker {
   getCurrentTick(): number {
     return this.state.tick;
   }
-}
-
-/**
- * Create initial game state
- */
-export function createInitialGameState(): GameState {
-  return {
-    tick: 0,
-    territories: new Map(),
-    factions: new Map(),
-    pendingBattles: [],
-    sieges: new Map(),
-    relations: new Map(),
-  };
 }

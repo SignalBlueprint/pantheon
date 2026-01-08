@@ -663,6 +663,52 @@ export interface ReplayArchive {
 export const EVENT_LOG_BATCH_SIZE = 1000; // Events per batch before compression
 export const EVENT_LOG_BATCH_TICKS = 3600; // Batch every hour of ticks
 
+// Replay playback speeds
+export const PLAYBACK_SPEEDS = {
+  '1x': 1,
+  '10x': 10,
+  '100x': 100,
+  '1000x': 1000,
+} as const;
+
+export type PlaybackSpeed = keyof typeof PLAYBACK_SPEEDS;
+
+// Replay metadata
+export interface ReplayMetadata {
+  shardId: string;
+  seasonId?: string;
+  startTick: number;
+  endTick: number;
+  totalEvents: number;
+  totalTicks: number;
+  compressedSizeBytes: number;
+}
+
+// Serialized replay state for client
+export interface ReplayStateInfo {
+  currentTick: number;
+  endTick: number;
+  startTick: number;
+  isPlaying: boolean;
+  playbackSpeed: number;
+  progress: number;
+  eventCount: number;
+  factionCount: number;
+  territoryCount: number;
+}
+
+// Helper to create initial game state
+export function createInitialGameState(): GameState {
+  return {
+    tick: 0,
+    territories: new Map(),
+    factions: new Map(),
+    pendingBattles: [],
+    sieges: new Map(),
+    relations: new Map(),
+  };
+}
+
 // GameState - the complete world state
 export interface GameState {
   tick: number;
