@@ -6,6 +6,9 @@ export * from './hex.js';
 // Re-export miracle system
 export * from './miracles.js';
 
+// Re-export interpolation utilities
+export * from './interpolation.js';
+
 // Game constants
 export const TICK_RATE_MS = 1000; // World tick rate
 export const SIEGE_DURATION_HOURS = 24; // Minimum siege time

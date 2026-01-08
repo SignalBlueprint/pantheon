@@ -7,6 +7,16 @@ import {
   PLAYBACK_SPEEDS,
   PlaybackSpeed,
   GameEvent,
+  lerp,
+  lerpEased,
+  easeOutCubic,
+  easeInOutCubic,
+  createInterpolationState,
+  InterpolationState,
+  updateInterpolation,
+  getInterpolatedTick,
+  startInterpolation,
+  snapToTick,
 } from '@pantheon/shared';
 
 interface ReplayViewerProps {
@@ -19,10 +29,11 @@ interface ReplayViewerProps {
  * Format tick count to readable time
  */
 function formatTicks(ticks: number): string {
-  if (ticks < 60) return `${ticks}s`;
-  if (ticks < 3600) return `${Math.floor(ticks / 60)}m ${ticks % 60}s`;
-  const hours = Math.floor(ticks / 3600);
-  const mins = Math.floor((ticks % 3600) / 60);
+  const roundedTicks = Math.floor(ticks);
+  if (roundedTicks < 60) return `${roundedTicks}s`;
+  if (roundedTicks < 3600) return `${Math.floor(roundedTicks / 60)}m ${roundedTicks % 60}s`;
+  const hours = Math.floor(roundedTicks / 3600);
+  const mins = Math.floor((roundedTicks % 3600) / 60);
   return `${hours}h ${mins}m`;
 }
 
@@ -56,6 +67,7 @@ function getEventIcon(eventType: string): string {
 
 /**
  * Replay Viewer - time-scrubbing spectator mode for archived seasons
+ * Features smooth interpolation between ticks for visual clarity
  */
 export function ReplayViewer({
   shardId,
@@ -73,7 +85,18 @@ export function ReplayViewer({
   const [showEvents, setShowEvents] = useState(true);
   const [interestingMoments, setInterestingMoments] = useState<number[]>([]);
 
+  // Smooth interpolation state
+  const [interpState, setInterpState] = useState<InterpolationState>(() =>
+    createInterpolationState(0)
+  );
+  const [displayTick, setDisplayTick] = useState(0);
+  const [smoothProgress, setSmoothProgress] = useState(0);
+
+  // Animation frame refs
   const playbackRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const lastFrameTimeRef = useRef<number>(0);
+  const accumulatedTimeRef = useRef<number>(0);
 
   // Load replay metadata
   useEffect(() => {
@@ -102,7 +125,8 @@ export function ReplayViewer({
   // Fetch events for current tick range
   const fetchEventsForTick = useCallback(async (tick: number) => {
     try {
-      const response = await fetch(`/api/replay/${shardId}/events?tick=${tick}&range=100`);
+      const roundedTick = Math.floor(tick);
+      const response = await fetch(`/api/replay/${shardId}/events?tick=${roundedTick}&range=100`);
       if (!response.ok) return;
       const data = await response.json();
       setEvents(data.events || []);
@@ -111,44 +135,113 @@ export function ReplayViewer({
     }
   }, [shardId]);
 
-  // Handle playback
+  // Animation loop for smooth rendering
   useEffect(() => {
-    if (isPlaying && metadata) {
-      playbackRef.current = setInterval(() => {
-        setCurrentTick(prev => {
-          const next = prev + PLAYBACK_SPEEDS[playbackSpeed];
-          if (next >= metadata.endTick) {
-            setIsPlaying(false);
-            return metadata.endTick;
-          }
-          return next;
-        });
-      }, 1000);
-    } else {
-      if (playbackRef.current) {
-        clearInterval(playbackRef.current);
-        playbackRef.current = null;
+    function animate(timestamp: number) {
+      if (!metadata) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
       }
+
+      // Calculate delta time
+      const deltaTime = lastFrameTimeRef.current ? timestamp - lastFrameTimeRef.current : 0;
+      lastFrameTimeRef.current = timestamp;
+
+      // Update interpolation state
+      const updatedInterpState = updateInterpolation(interpState, timestamp);
+      if (updatedInterpState !== interpState) {
+        setInterpState(updatedInterpState);
+      }
+
+      // Get smoothly interpolated tick for display
+      const interpolatedTick = getInterpolatedTick(updatedInterpState, easeOutCubic);
+      setDisplayTick(interpolatedTick);
+
+      // Smoothly animate progress bar
+      const totalTicks = metadata.endTick - metadata.startTick;
+      const targetProgress = totalTicks > 0
+        ? ((interpolatedTick - metadata.startTick) / totalTicks) * 100
+        : 0;
+
+      // Smooth progress with easing
+      setSmoothProgress(prev => {
+        const diff = targetProgress - prev;
+        // Quick snap if difference is large (seeking), smooth otherwise
+        if (Math.abs(diff) > 5) {
+          return lerpEased(prev, targetProgress, 0.3, easeInOutCubic);
+        }
+        return lerp(prev, targetProgress, 0.15);
+      });
+
+      // Accumulate time for tick advancement during playback
+      if (isPlaying) {
+        accumulatedTimeRef.current += deltaTime;
+        const ticksPerSecond = PLAYBACK_SPEEDS[playbackSpeed];
+        const msPerTick = 1000 / ticksPerSecond;
+
+        while (accumulatedTimeRef.current >= msPerTick) {
+          accumulatedTimeRef.current -= msPerTick;
+          setCurrentTick(prev => {
+            const next = prev + 1;
+            if (next >= metadata.endTick) {
+              setIsPlaying(false);
+              return metadata.endTick;
+            }
+            return next;
+          });
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(animate);
     }
 
+    animationFrameRef.current = requestAnimationFrame(animate);
+
     return () => {
-      if (playbackRef.current) {
-        clearInterval(playbackRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isPlaying, playbackSpeed, metadata]);
+  }, [metadata, interpState, isPlaying, playbackSpeed]);
 
-  // Fetch events when tick changes
+  // Start interpolation when currentTick changes
   useEffect(() => {
-    fetchEventsForTick(currentTick);
-  }, [currentTick, fetchEventsForTick]);
+    if (metadata) {
+      // Calculate interpolation duration based on playback speed
+      const ticksPerSecond = PLAYBACK_SPEEDS[playbackSpeed];
+      const durationMs = 1000 / ticksPerSecond;
 
-  // Seek to tick
+      setInterpState(prev =>
+        startInterpolation(prev, currentTick, durationMs)
+      );
+    }
+  }, [currentTick, metadata, playbackSpeed]);
+
+  // Fetch events when display tick changes significantly
+  useEffect(() => {
+    const roundedTick = Math.floor(displayTick);
+    fetchEventsForTick(roundedTick);
+  }, [Math.floor(displayTick), fetchEventsForTick]);
+
+  // Seek to tick (with smooth animation)
   const seekToTick = useCallback((tick: number) => {
     if (!metadata) return;
     const clampedTick = Math.max(metadata.startTick, Math.min(metadata.endTick, tick));
+
+    // For large jumps, use faster interpolation
+    const distance = Math.abs(clampedTick - currentTick);
+    const totalRange = metadata.endTick - metadata.startTick;
+    const jumpRatio = distance / totalRange;
+
+    if (jumpRatio > 0.1) {
+      // Large jump - snap immediately for responsiveness
+      setInterpState(prev => snapToTick(prev, clampedTick));
+      setDisplayTick(clampedTick);
+    }
+
     setCurrentTick(clampedTick);
-  }, [metadata]);
+    accumulatedTimeRef.current = 0;
+  }, [metadata, currentTick]);
 
   // Skip to interesting moment
   const skipToMoment = useCallback((direction: 'prev' | 'next') => {
@@ -165,13 +258,25 @@ export function ReplayViewer({
 
   // Toggle play/pause
   const togglePlayback = useCallback(() => {
-    setIsPlaying(prev => !prev);
+    setIsPlaying(prev => {
+      if (!prev) {
+        // Starting playback - reset accumulated time
+        accumulatedTimeRef.current = 0;
+        lastFrameTimeRef.current = 0;
+      }
+      return !prev;
+    });
   }, []);
 
-  // Progress percentage
-  const progress = metadata
-    ? Math.round(((currentTick - metadata.startTick) / (metadata.endTick - metadata.startTick)) * 100)
-    : 0;
+  // Clean up old interval-based playback (no longer needed)
+  useEffect(() => {
+    return () => {
+      if (playbackRef.current) {
+        clearInterval(playbackRef.current);
+        playbackRef.current = null;
+      }
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -229,16 +334,28 @@ export function ReplayViewer({
           <div className="text-center text-gray-400">
             <span className="text-6xl mb-4 block">🗺️</span>
             <p className="text-xl mb-2">Map View</p>
-            <p className="text-sm">Tick: {currentTick.toLocaleString()}</p>
-            <p className="text-sm">Progress: {progress}%</p>
+            <p className="text-sm">Tick: {Math.floor(displayTick).toLocaleString()}</p>
+            <p className="text-sm">Progress: {smoothProgress.toFixed(1)}%</p>
+            {isPlaying && (
+              <p className="text-xs text-blue-400 mt-2 animate-pulse">
+                Playing at {playbackSpeed}
+              </p>
+            )}
           </div>
 
-          {/* Current tick display */}
+          {/* Current tick display with smooth animation */}
           <div className="absolute top-4 left-4 bg-black/70 px-4 py-2 rounded-lg">
-            <span className="text-white font-mono text-lg">
-              {formatTicks(currentTick)} / {formatTicks(metadata.endTick)}
+            <span className="text-white font-mono text-lg transition-all duration-150">
+              {formatTicks(displayTick)} / {formatTicks(metadata.endTick)}
             </span>
           </div>
+
+          {/* Interpolation indicator */}
+          {interpState.isAnimating && (
+            <div className="absolute top-4 right-4 bg-blue-500/30 px-3 py-1 rounded text-blue-300 text-xs">
+              Interpolating... {(interpState.progress * 100).toFixed(0)}%
+            </div>
+          )}
         </div>
 
         {/* Event log sidebar */}
@@ -261,7 +378,11 @@ export function ReplayViewer({
                   {events.slice(0, 50).map((event, idx) => (
                     <div
                       key={event.id || idx}
-                      className="p-2 bg-gray-800 rounded text-sm"
+                      className="p-2 bg-gray-800 rounded text-sm transition-all duration-200 hover:bg-gray-750"
+                      style={{
+                        opacity: event.tick <= Math.floor(displayTick) ? 1 : 0.5,
+                        transform: event.tick === Math.floor(displayTick) ? 'scale(1.02)' : 'scale(1)',
+                      }}
                     >
                       <div className="flex items-center gap-2">
                         <span>{getEventIcon(event.eventType)}</span>
@@ -283,7 +404,7 @@ export function ReplayViewer({
 
       {/* Timeline controls */}
       <div className="bg-gray-900 border-t border-gray-700 p-4">
-        {/* Progress bar with interesting moments */}
+        {/* Progress bar with smooth animation and interesting moments */}
         <div className="relative mb-4">
           <input
             type="range"
@@ -293,8 +414,13 @@ export function ReplayViewer({
             onChange={(e) => seekToTick(parseInt(e.target.value))}
             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
             style={{
-              background: `linear-gradient(to right, #3B82F6 0%, #3B82F6 ${progress}%, #374151 ${progress}%, #374151 100%)`,
+              background: `linear-gradient(to right, #3B82F6 0%, #3B82F6 ${smoothProgress}%, #374151 ${smoothProgress}%, #374151 100%)`,
             }}
+          />
+          {/* Smooth progress overlay (for visual smoothness) */}
+          <div
+            className="absolute top-0 left-0 h-2 bg-blue-500 rounded-l-lg pointer-events-none transition-all duration-75"
+            style={{ width: `${smoothProgress}%` }}
           />
           {/* Interesting moment markers */}
           <div className="absolute top-0 left-0 right-0 h-2 pointer-events-none">
@@ -303,13 +429,25 @@ export function ReplayViewer({
               return (
                 <div
                   key={idx}
-                  className="absolute w-1 h-3 bg-amber-400 -top-0.5 rounded-full"
-                  style={{ left: `${pos}%`, transform: 'translateX(-50%)' }}
+                  className="absolute w-1 h-3 bg-amber-400 -top-0.5 rounded-full transition-all duration-200"
+                  style={{
+                    left: `${pos}%`,
+                    transform: 'translateX(-50%)',
+                    opacity: Math.abs(pos - smoothProgress) < 2 ? 1 : 0.6,
+                    scale: Math.abs(pos - smoothProgress) < 2 ? '1.2' : '1',
+                  }}
                   title={`Interesting moment at tick ${tick}`}
                 />
               );
             })}
           </div>
+          {/* Current position indicator */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg pointer-events-none transition-all duration-100"
+            style={{
+              left: `calc(${smoothProgress}% - 8px)`,
+            }}
+          />
         </div>
 
         {/* Playback controls */}
@@ -336,7 +474,11 @@ export function ReplayViewer({
             {/* Play/Pause */}
             <button
               onClick={togglePlayback}
-              className="p-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition-colors text-xl"
+              className={`p-3 rounded-lg text-white transition-all text-xl ${
+                isPlaying
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
               {isPlaying ? '⏸️' : '▶️'}
             </button>
@@ -367,9 +509,9 @@ export function ReplayViewer({
               <button
                 key={speed}
                 onClick={() => setPlaybackSpeed(speed)}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
+                className={`px-3 py-1 rounded text-sm transition-all ${
                   playbackSpeed === speed
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-blue-600 text-white scale-105'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >

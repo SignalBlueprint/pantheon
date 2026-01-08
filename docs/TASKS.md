@@ -449,7 +449,7 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 - [x] Implement time scrubbing — slider to jump to any point in season
 - [x] Add playback speed controls — 1x, 10x, 100x, 1000x speed
 - [x] Build replay viewer UI — same map view but read-only, with timeline controls
-- [ ] Implement smooth interpolation — animate between ticks for visual clarity
+- [x] Implement smooth interpolation — animate between ticks for visual clarity
 
 **Estimated Effort:** 24-30 hours
 
