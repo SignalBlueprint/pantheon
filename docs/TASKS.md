@@ -314,16 +314,16 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 #### Specialization Implementation
 
 - [x] Add `specialization` field to Faction — null until unlocked, then one of four types
-- [ ] Implement Maritime abilities — ship unit type, overseas movement, island colonization
-- [ ] Implement Fortress abilities — defense multiplier, mineshaft building, rare resource type
-- [ ] Implement Plains abilities — population modifier, trade route bonuses, granary building
-- [ ] Implement Nomadic abilities — camp instead of city, raid action, movement speed bonus
+- [x] Implement Maritime abilities — ship unit type, overseas movement, island colonization
+- [x] Implement Fortress abilities — defense multiplier, mineshaft building, rare resource type
+- [x] Implement Plains abilities — population modifier, trade route bonuses, granary building
+- [x] Implement Nomadic abilities — camp instead of city, raid action, movement speed bonus
 
 #### UI for Specialization
 
 - [x] Create specialization selection modal — appears when unlock triggered, shows all four paths
 - [x] Add specialization indicator to faction panel — icon and description of chosen path
-- [ ] Show specialization-specific buildings — only available after path chosen
+- [x] Show specialization-specific buildings — only available after path chosen
 - [ ] Display locked paths — show what you didn't choose, can't be changed
 
 **New Infrastructure Required:**

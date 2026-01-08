@@ -4,6 +4,12 @@
  */
 
 import { GameState, Territory, Faction, TICK_RATE_MS, DIVINE_POWER_MAX, DIVINE_POWER_REGEN_PER_TEMPLE, createInitialGameState } from '@pantheon/shared';
+import {
+  getFoodProductionMultiplier,
+  getProductionMultiplier,
+  getPopulationCapMultiplier,
+  getTradeBonus,
+} from '../systems/specialization.js';
 export { createInitialGameState };
 
 // Tick phase callbacks
@@ -140,33 +146,53 @@ export class Ticker {
       const faction = this.state.factions.get(territory.owner);
       if (!faction) continue;
 
-      // Calculate effect multipliers
-      let foodMultiplier = 1;
-      let productionMultiplier = 1;
+      // Calculate effect multipliers (from active miracles)
+      let effectFoodMultiplier = 1;
+      let effectProductionMultiplier = 1;
       for (const effect of territory.activeEffects) {
         if (effect.modifier.foodMultiplier) {
-          foodMultiplier *= effect.modifier.foodMultiplier;
+          effectFoodMultiplier *= effect.modifier.foodMultiplier;
         }
         if (effect.modifier.productionMultiplier) {
-          productionMultiplier *= effect.modifier.productionMultiplier;
+          effectProductionMultiplier *= effect.modifier.productionMultiplier;
         }
       }
 
-      // Base production rates with effect multipliers applied
+      // Apply specialization multipliers
+      const specFoodMultiplier = getFoodProductionMultiplier(faction);
+      const specProductionMultiplier = getProductionMultiplier(faction);
+
+      // Combine all multipliers
+      const foodMultiplier = effectFoodMultiplier * specFoodMultiplier;
+      const productionMultiplier = effectProductionMultiplier * specProductionMultiplier;
+
+      // Base production rates with all multipliers applied
       const foodProduced = Math.floor(territory.food * 0.1 * foodMultiplier);
       const productionProduced = Math.floor(territory.production * 0.1 * productionMultiplier);
 
       faction.resources.food += foodProduced;
       faction.resources.production += productionProduced;
+
+      // Plains specialization: Trade bonus converts surplus food to gold
+      const tradeBonus = getTradeBonus(faction);
+      if (tradeBonus > 0 && faction.resources.food > 1000) {
+        const surplusFood = faction.resources.food - 1000;
+        const goldFromTrade = Math.floor(surplusFood * tradeBonus);
+        if (goldFromTrade > 0) {
+          faction.resources.gold += goldFromTrade;
+          faction.resources.food -= Math.floor(surplusFood * 0.5); // Consume half of surplus
+        }
+      }
     }
   }
 
   /**
    * Process population growth for all territories
    * Growth if food surplus, shrink if deficit, cap at territory limit
+   * Plains specialization increases population cap
    */
   private processPopulationGrowth(): void {
-    const POPULATION_CAP = 1000;
+    const BASE_POPULATION_CAP = 1000;
     const GROWTH_RATE = 0.02; // 2% growth per tick
     const FOOD_PER_POP = 0.1; // Food consumed per population
 
@@ -176,6 +202,10 @@ export class Ticker {
       const faction = this.state.factions.get(territory.owner);
       if (!faction) continue;
 
+      // Apply specialization population cap multiplier (Plains = 2.0x)
+      const popCapMultiplier = getPopulationCapMultiplier(faction);
+      const populationCap = Math.floor(BASE_POPULATION_CAP * popCapMultiplier);
+
       // Calculate food consumption
       const foodConsumed = Math.floor(territory.population * FOOD_PER_POP);
 
@@ -183,7 +213,7 @@ export class Ticker {
         // Food surplus - population grows
         faction.resources.food -= foodConsumed;
         const growth = Math.floor(territory.population * GROWTH_RATE);
-        territory.population = Math.min(POPULATION_CAP, territory.population + growth);
+        territory.population = Math.min(populationCap, territory.population + growth);
       } else {
         // Food deficit - population shrinks
         const deficit = foodConsumed - faction.resources.food;

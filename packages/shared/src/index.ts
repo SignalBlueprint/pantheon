@@ -53,7 +53,124 @@ export interface ActiveEffect {
 }
 
 // Building types for territories
-export type BuildingType = 'temple' | 'farm' | 'workshop' | 'fortress';
+// Base buildings available to all factions
+export type BaseBuildingType = 'temple' | 'farm' | 'workshop' | 'fortress';
+
+// Specialization-specific buildings
+export type MaritimeBuildingType = 'shipyard' | 'lighthouse' | 'harbor';
+export type FortressBuildingType = 'mineshaft' | 'watchtower' | 'mountain_fortress';
+export type PlainsBuildingType = 'granary' | 'market' | 'irrigation';
+export type NomadicBuildingType = 'camp' | 'horse_stable' | 'raider_outpost';
+
+// All building types combined
+export type BuildingType =
+  | BaseBuildingType
+  | MaritimeBuildingType
+  | FortressBuildingType
+  | PlainsBuildingType
+  | NomadicBuildingType;
+
+// Building costs (in production)
+export const BUILDING_COSTS: Record<BuildingType, number> = {
+  // Base buildings
+  temple: 200,
+  farm: 100,
+  workshop: 150,
+  fortress: 300,
+  // Maritime buildings
+  shipyard: 250,
+  lighthouse: 150,
+  harbor: 200,
+  // Fortress buildings
+  mineshaft: 200,
+  watchtower: 150,
+  mountain_fortress: 350,
+  // Plains buildings
+  granary: 150,
+  market: 200,
+  irrigation: 100,
+  // Nomadic buildings
+  camp: 50,
+  horse_stable: 150,
+  raider_outpost: 200,
+};
+
+// Building effects
+export interface BuildingEffect {
+  foodBonus?: number;
+  productionBonus?: number;
+  defenseBonus?: number;
+  populationBonus?: number;
+  tradeBonus?: number;
+  specialEffect?: string;
+}
+
+export const BUILDING_EFFECTS: Record<BuildingType, BuildingEffect> = {
+  // Base buildings
+  temple: { specialEffect: 'divine_power_regen' },
+  farm: { foodBonus: 0.2 },
+  workshop: { productionBonus: 0.2 },
+  fortress: { defenseBonus: 0.5 },
+  // Maritime buildings
+  shipyard: { specialEffect: 'build_ships' },
+  lighthouse: { tradeBonus: 0.1 },
+  harbor: { tradeBonus: 0.15, productionBonus: 0.1 },
+  // Fortress buildings
+  mineshaft: { productionBonus: 0.3, specialEffect: 'rare_resources' },
+  watchtower: { defenseBonus: 0.25, specialEffect: 'vision_bonus' },
+  mountain_fortress: { defenseBonus: 0.75 },
+  // Plains buildings
+  granary: { foodBonus: 0.25, specialEffect: 'food_storage' },
+  market: { tradeBonus: 0.2 },
+  irrigation: { foodBonus: 0.3, populationBonus: 0.1 },
+  // Nomadic buildings
+  camp: { specialEffect: 'mobile_base' },
+  horse_stable: { specialEffect: 'movement_speed' },
+  raider_outpost: { specialEffect: 'raid_bonus' },
+};
+
+// Base buildings available to all factions
+export const BASE_BUILDINGS: BaseBuildingType[] = ['temple', 'farm', 'workshop', 'fortress'];
+
+// Specialization buildings mapping
+export const SPECIALIZATION_BUILDINGS: Record<Exclude<SpecializationType, null>, BuildingType[]> = {
+  maritime: ['shipyard', 'lighthouse', 'harbor'],
+  fortress: ['mineshaft', 'watchtower', 'mountain_fortress'],
+  plains: ['granary', 'market', 'irrigation'],
+  nomadic: ['camp', 'horse_stable', 'raider_outpost'],
+};
+
+/**
+ * Check if a faction can build a specific building type
+ * Base buildings are always available
+ * Specialization buildings require the matching specialization
+ */
+export function canFactionBuild(specialization: SpecializationType, buildingType: BuildingType): boolean {
+  // Base buildings are always available
+  if (BASE_BUILDINGS.includes(buildingType as BaseBuildingType)) {
+    return true;
+  }
+
+  // Without specialization, can only build base buildings
+  if (!specialization) {
+    return false;
+  }
+
+  // Check if the building is available for this specialization
+  const specBuildings = SPECIALIZATION_BUILDINGS[specialization];
+  return specBuildings.includes(buildingType);
+}
+
+/**
+ * Get all buildings available to a faction
+ */
+export function getAvailableBuildings(specialization: SpecializationType): BuildingType[] {
+  const available = [...BASE_BUILDINGS] as BuildingType[];
+  if (specialization) {
+    available.push(...SPECIALIZATION_BUILDINGS[specialization]);
+  }
+  return available;
+}
 
 // Territory type - uses axial hex coordinates (q, r)
 export interface Territory {

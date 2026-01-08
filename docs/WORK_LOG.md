@@ -972,3 +972,56 @@ All Season Transition tasks have been implemented:
 Total: 3/3 tasks complete
 
 ---
+
+## Implement Specialization Abilities (Section 2.3)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/simulation/ticker.ts` — Apply specialization multipliers to resource production/population
+- `apps/server/src/simulation/siege.ts` — Apply specialization defense multiplier
+- `packages/shared/src/index.ts` — Added building types, costs, effects, and availability helpers
+
+**Implementation Notes:**
+### Bonus Integration in Ticker
+- Applied `getFoodProductionMultiplier()` and `getProductionMultiplier()` to resource production
+- Applied `getPopulationCapMultiplier()` to population growth (Plains = 2000 cap)
+- Applied `getTradeBonus()` to convert surplus food to gold
+
+### Defense Integration in Siege
+- Applied `getDefenseMultiplier()` from specialization (Fortress = 1.5x defense)
+- Stacks with fortress building bonus and active effect multipliers
+
+### Building System Expansion
+- Added 12 new specialization building types:
+  - Maritime: shipyard, lighthouse, harbor
+  - Fortress: mineshaft, watchtower, mountain_fortress
+  - Plains: granary, market, irrigation
+  - Nomadic: camp, horse_stable, raider_outpost
+- Added `BUILDING_COSTS` constant (50-350 production)
+- Added `BUILDING_EFFECTS` constant with bonus definitions
+- Added `canFactionBuild()` helper to check availability
+- Added `getAvailableBuildings()` helper for UI
+
+### Specialization Abilities (via bonus system)
+- **Maritime Dominion**: navalCombatBonus (30%), canBuildShips, canSettleIslands
+- **Mountain Fortress**: defenseMultiplier (1.5x), productionMultiplier (1.2x)
+- **Fertile Plains**: populationCapMultiplier (2.0x), foodProductionMultiplier (1.3x), tradeBonus (15%)
+- **Nomadic Horde**: movementSpeedMultiplier (2.0x), raidDamageMultiplier (1.5x), canRaidWithoutSiege
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## SECTION 2.3 SPECIALIZATION IMPLEMENTATION COMPLETE
+**Completed:** 2026-01-08
+
+All Specialization Implementation tasks have been completed:
+- Implement Maritime abilities (1/1)
+- Implement Fortress abilities (1/1)
+- Implement Plains abilities (1/1)
+- Implement Nomadic abilities (1/1)
+- Show specialization-specific buildings (1/1)
+
+Total: 5/5 tasks complete (1 UI task deferred: display locked paths)
+
+---

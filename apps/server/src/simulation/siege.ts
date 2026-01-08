@@ -13,6 +13,7 @@ import {
   SiegeStatus,
 } from '@pantheon/shared';
 import { v4 as uuidv4 } from 'uuid';
+import { getDefenseMultiplier } from '../systems/specialization.js';
 
 /**
  * Result of a siege operation
@@ -154,12 +155,15 @@ export function startSiege(
 
 /**
  * Calculate defender strength for a territory
+ * Includes specialization bonuses (Fortress = 1.5x defense)
  */
 function calculateDefenderStrength(
   state: GameState,
   territory: Territory
 ): number {
   if (!territory.owner) return 0;
+
+  const defender = state.factions.get(territory.owner);
 
   // Base defense from population
   let strength = Math.floor(territory.population * 0.1);
@@ -171,9 +175,15 @@ function calculateDefenderStrength(
     }
   }
 
-  // Add fortress bonus if present
+  // Add fortress building bonus if present
   if (territory.buildings.includes('fortress')) {
     strength = Math.floor(strength * 1.5);
+  }
+
+  // Apply specialization defense multiplier (Fortress specialization = 1.5x)
+  if (defender) {
+    const specDefenseMultiplier = getDefenseMultiplier(defender);
+    strength = Math.floor(strength * specDefenseMultiplier);
   }
 
   return strength;
