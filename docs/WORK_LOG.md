@@ -134,3 +134,20 @@ Territory type already includes all required fields: `{ id, q, r, owner, populat
 Type already exists and compiles correctly.
 
 ---
+
+## Build hex map generator
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/world/mapgen.ts` — created hex map generator
+
+**Implementation Notes:**
+- `generateHexMap(radius)` - creates Map of territories for given radius (default 4 = 61 hexes)
+- Uses `hexesInRadius()` from shared package to get all coordinates
+- Random resource generation for food (10-100) and production (5-50)
+- `hexCountForRadius()` - calculates total hexes (1 + 3n(n+1))
+- `serializeTerritories()` / `deserializeTerritories()` - JSON conversion utilities
+
+**Verification:**
+Successfully ran `pnpm --filter @pantheon/server build` - TypeScript compiled without errors.
+
+---

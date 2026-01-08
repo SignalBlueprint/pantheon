@@ -35,7 +35,7 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 - [x] Define hex coordinate system in `packages/shared/src/hex.ts` — use axial coordinates (q, r), implement `hexDistance()`, `hexNeighbors()`, `hexToPixel()`, `pixelToHex()`
 - [x] Create `Territory` type — `{ id, q, r, owner: factionId | null, population, food, production }`
-- [ ] Build hex map generator in `apps/server/src/world/mapgen.ts` — generate 61-hex map (radius 4), assign random starting resources
+- [x] Build hex map generator in `apps/server/src/world/mapgen.ts` — generate 61-hex map (radius 4), assign random starting resources
 - [ ] Create React hex renderer in `apps/web/src/components/map/HexGrid.tsx` — render hexes using Canvas or SVG, color by faction owner
 - [ ] Implement pan and zoom on hex map — mouse drag to pan, scroll to zoom, clamp to map bounds
 - [ ] Add territory click handler — clicking hex shows territory detail panel with stats
