@@ -65,11 +65,11 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Real-Time Sync (Local First)
 
-- [ ] Create WebSocket server in `apps/server/src/net/socket.ts` — use `ws` package, handle connect/disconnect
-- [ ] Broadcast game state diff on each tick — send only changed territories and factions
-- [ ] Create WebSocket hook in `apps/web/src/hooks/useGameSocket.ts` — connect, receive state updates, expose `gameState`
-- [ ] Update hex map on state change — re-render only changed territories for performance
-- [ ] Add connection status indicator — show "Connected" / "Reconnecting" in UI corner
+- [x] Create WebSocket server in `apps/server/src/net/socket.ts` — use `ws` package, handle connect/disconnect
+- [x] Broadcast game state diff on each tick — send only changed territories and factions
+- [x] Create WebSocket hook in `apps/web/src/hooks/useGameSocket.ts` — connect, receive state updates, expose `gameState`
+- [x] Update hex map on state change — re-render only changed territories for performance
+- [x] Add connection status indicator — show "Connected" / "Reconnecting" in UI corner
 
 **Acceptance Criteria:**
 - Hex map renders with 61 territories

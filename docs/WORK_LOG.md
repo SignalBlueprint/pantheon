@@ -191,3 +191,70 @@ Successfully ran `pnpm --filter @pantheon/web build` - compiled and generated st
 Successfully ran `pnpm --filter @pantheon/server build` - TypeScript compiled without errors.
 
 ---
+
+## Implement World Tick System
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/simulation/ticker.ts` — created game loop with tick phases
+
+**Implementation Notes:**
+- Ticker class with setInterval-based game loop (1000ms default)
+- 5 tick phases: resource production, population growth, AI decisions, combat resolution, broadcast state
+- processResourceProduction() - territories generate 10% of food/production for owner
+- processPopulationGrowth() - 2% growth with food surplus, shrink with deficit, cap at 1000
+
+**Verification:**
+Successfully ran `pnpm --filter @pantheon/server build`.
+
+---
+
+## Implement Faction AI
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/simulation/ai.ts` — created AI decision maker
+
+**Implementation Notes:**
+- processAIDecision() runs per AI faction per tick
+- Expansion logic: claim adjacent unclaimed territory (costs 20 production)
+- Aggression logic: queue attack on enemy territory (costs 30 production)
+- Defense logic: reinforce territories under attack
+- ±20% randomness on all decisions
+- resolveBattles() resolves combat after 5 ticks
+
+**Verification:**
+Successfully ran `pnpm --filter @pantheon/server build`.
+
+---
+
+## Implement Real-Time Sync
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/net/socket.ts` — WebSocket server for state broadcasting
+- `apps/web/src/hooks/useGameSocket.ts` — client-side WebSocket hook
+- `apps/web/src/components/ui/ConnectionStatus.tsx` — connection indicator
+
+**Implementation Notes:**
+- GameSocketServer class manages WebSocket connections and state broadcasting
+- broadcastStateDiff() sends only changed territories/factions
+- useGameSocket() React hook with auto-reconnect (5 attempts, 3s interval)
+- ConnectionStatus component shows connected/reconnecting/disconnected state
+
+**Verification:**
+Successfully built both server and web apps.
+
+---
+
+## HORIZON 1 SECTION 1.1 COMPLETE
+**Completed:** 2026-01-08
+
+All tasks in "1.1 Single Shard Playable World" have been implemented:
+- Foundation (5/5 tasks)
+- Hex Map System (6/6 tasks)
+- Faction System (4/4 tasks)
+- World Tick System (5/5 tasks)
+- Faction AI (5/5 tasks)
+- Real-Time Sync (5/5 tasks)
+
+Total: 30/30 tasks complete
+
+---
