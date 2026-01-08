@@ -1,8 +1,20 @@
+import express from 'express';
+import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 
+const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 
-const wss = new WebSocketServer({ port: PORT });
+// Health check endpoint
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
+});
+
+// Create HTTP server
+const server = createServer(app);
+
+// Attach WebSocket server to HTTP server
+const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws) => {
   console.log('Client connected');
@@ -16,4 +28,7 @@ wss.on('connection', (ws) => {
   });
 });
 
-console.log(`Pantheon game server running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Pantheon game server running on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
+});

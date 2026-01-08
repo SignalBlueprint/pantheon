@@ -27,7 +27,7 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 - [x] Initialize monorepo with Turborepo — `pnpm dlx create-turbo@latest`, configure `apps/web`, `apps/server`, `packages/shared`
 - [x] Set up Next.js app in `apps/web` — `pnpm create next-app`, configure TypeScript, Tailwind
-- [ ] Set up Node.js server in `apps/server` — basic Express + ts-node, health check endpoint
+- [x] Set up Node.js server in `apps/server` — basic Express + ts-node, health check endpoint
 - [ ] Create `packages/shared` — export TypeScript types for Territory, Faction, GameState
 - [ ] Configure Supabase project — create new project, save credentials to `.env.local`
 

@@ -43,3 +43,20 @@ Verified structure exists with correct Turborepo configuration in turbo.json and
 Successfully ran `pnpm --filter @pantheon/web build` - compiled and generated static pages without errors.
 
 ---
+
+## Set up Node.js server with Express and health check
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/index.ts` — refactored to use Express with HTTP server, added /health endpoint
+- `apps/server/package.json` — added express and @types/express dependencies
+
+**Implementation Notes:**
+- Added Express 4.18 for HTTP routing
+- Created health check endpoint at GET /health returning `{ status: 'ok', timestamp: number }`
+- Attached WebSocket server to Express HTTP server (instead of standalone ws server)
+- Server runs on port 3001 (configurable via PORT env var)
+
+**Verification:**
+Started server with `pnpm --filter @pantheon/server dev`, then `curl http://localhost:3001/health` returned `{"status":"ok","timestamp":...}`.
+
+---
