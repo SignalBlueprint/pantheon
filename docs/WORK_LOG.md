@@ -374,3 +374,53 @@ Successfully ran `pnpm build` - all packages compiled without errors.
 Successfully ran `pnpm build` - all packages compiled without errors.
 
 ---
+
+## Implement Notification System (Section 1.3)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/systems/notifications.ts` — Notification service for siege events
+- `apps/server/src/index.ts` — Added notification API endpoints
+- `apps/web/src/components/ui/NotificationBell.tsx` — Notification UI component
+
+**Implementation Notes:**
+### Notification Service
+- `createSiegeNotification()` generates notifications for siege events
+- Notification types: siege_started, siege_50, siege_90, siege_complete, territory_lost, territory_gained
+- Events logged to console and persisted to database for player deities
+
+### API Endpoints
+- GET `/api/notifications?deityId=X` — returns notifications for a deity
+- GET `/api/notifications/unread-count?deityId=X` — returns unread count
+- POST `/api/notifications/:id/read` — marks notification as read
+- POST `/api/notifications/mark-all-read` — marks all notifications as read for a deity
+
+### NotificationBell UI
+- Bell icon with unread count badge
+- Dropdown panel with notification list
+- Click to mark individual notifications as read
+- "Mark all read" button
+- Relative time formatting (Just now, Xm ago, Xh ago, Xd ago)
+- Icons and styling per notification type (siege, territory, miracle, diplomacy)
+
+### AI Integration
+- AI factions respond to siege events through direct game state inspection
+- AI defense logic already handles siege response automatically
+- Notifications logged for all events (both human and AI)
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## HORIZON 1 SECTION 1.3 COMPLETE
+**Completed:** 2026-01-08
+
+All tasks in "1.3 Offline Persistence with Slow Sieges" have been implemented:
+- Persistence Layer (4/4 tasks)
+- Siege System (6/6 tasks)
+- Notification System (4/5 tasks - push notifications marked as future)
+- Offline AI Enhancement (3/3 tasks)
+
+Total: 17/18 tasks complete (push notification integration marked as future scope)
+
+---

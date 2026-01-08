@@ -6,9 +6,18 @@ import { isSupabaseConfigured } from './db/supabase.js';
 import { saveFullState, shouldSaveOnTick, saveGameState, loadGameState } from './db/persistence.js';
 import { Ticker, createInitialGameState } from './simulation/ticker.js';
 import { GameState } from '@pantheon/shared';
+import {
+  getNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
+} from './systems/notifications.js';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+
+// Enable JSON parsing
+app.use(express.json());
 
 // Game state and ticker
 let gameState: GameState = createInitialGameState();
@@ -23,6 +32,69 @@ app.get('/health', (_req, res) => {
     tick: gameState.tick,
     database: isSupabaseConfigured() ? 'connected' : 'not configured',
   });
+});
+
+// Notification API endpoints
+
+// GET /api/notifications - Get notifications for a deity
+app.get('/api/notifications', async (req, res) => {
+  const deityId = req.query.deityId as string;
+  if (!deityId) {
+    return res.status(400).json({ error: 'deityId query parameter required' });
+  }
+
+  try {
+    const notifications = await getNotifications(deityId);
+    res.json({ notifications });
+  } catch (error) {
+    console.error('[API] Error fetching notifications:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
+});
+
+// GET /api/notifications/unread-count - Get unread notification count
+app.get('/api/notifications/unread-count', async (req, res) => {
+  const deityId = req.query.deityId as string;
+  if (!deityId) {
+    return res.status(400).json({ error: 'deityId query parameter required' });
+  }
+
+  try {
+    const count = await getUnreadCount(deityId);
+    res.json({ count });
+  } catch (error) {
+    console.error('[API] Error fetching unread count:', error);
+    res.status(500).json({ error: 'Failed to fetch unread count' });
+  }
+});
+
+// POST /api/notifications/:id/read - Mark a notification as read
+app.post('/api/notifications/:id/read', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await markAsRead(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[API] Error marking notification as read:', error);
+    res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
+
+// POST /api/notifications/mark-all-read - Mark all notifications as read for a deity
+app.post('/api/notifications/mark-all-read', async (req, res) => {
+  const deityId = req.body.deityId as string;
+  if (!deityId) {
+    return res.status(400).json({ error: 'deityId required in request body' });
+  }
+
+  try {
+    await markAllAsRead(deityId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[API] Error marking all notifications as read:', error);
+    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+  }
 });
 
 // Create HTTP server

@@ -159,17 +159,17 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Notification System
 
-- [ ] Add `notifications` table — `{ id, deity_id, type, message, data, read, created_at }`
-- [ ] Generate notifications for: siege started, siege at 50%, siege at 90%, siege complete, territory lost
-- [ ] Create notification API endpoint — GET `/api/notifications` returns unread notifications
-- [ ] Build notification UI in `apps/web/src/components/ui/NotificationBell.tsx` — badge count, dropdown list
+- [x] Add `notifications` table — `{ id, deity_id, type, message, data, read, created_at }`
+- [x] Generate notifications for: siege started, siege at 50%, siege at 90%, siege complete, territory lost
+- [x] Create notification API endpoint — GET `/api/notifications` returns unread notifications
+- [x] Build notification UI in `apps/web/src/components/ui/NotificationBell.tsx` — badge count, dropdown list
 - [ ] Add push notification integration (future) — placeholder for FCM or web push
 
 #### Offline AI Enhancement
 
 - [x] Improve AI to handle sieges — AI defends sieged territories, breaks enemy sieges
 - [x] Add AI retreat logic — if siege is hopeless, AI may abandon territory to save army
-- [ ] Implement AI notifications — AI deity gets same notifications, may respond automatically
+- [x] Implement AI notifications — AI deity gets same notifications, may respond automatically
 
 **Acceptance Criteria:**
 - Server can restart and resume game state from database
