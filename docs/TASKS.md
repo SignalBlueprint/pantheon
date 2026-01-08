@@ -57,11 +57,11 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Faction AI
 
-- [ ] Create AI decision maker in `apps/server/src/simulation/ai.ts` — runs once per faction per tick
-- [ ] Implement expansion logic — if `policy.expansion > 50` and adjacent unclaimed territory exists, claim it (costs production)
-- [ ] Implement aggression logic — if `policy.aggression > 50` and adjacent enemy territory, queue attack
-- [ ] Implement defense logic — if own territory under threat, move armies to defend
-- [ ] Add randomness factor — AI decisions have ±20% variance to prevent deterministic outcomes
+- [x] Create AI decision maker in `apps/server/src/simulation/ai.ts` — runs once per faction per tick
+- [x] Implement expansion logic — if `policy.expansion > 50` and adjacent unclaimed territory exists, claim it (costs production)
+- [x] Implement aggression logic — if `policy.aggression > 50` and adjacent enemy territory, queue attack
+- [x] Implement defense logic — if own territory under threat, move armies to defend
+- [x] Add randomness factor — AI decisions have ±20% variance to prevent deterministic outcomes
 
 #### Real-Time Sync (Local First)
 
