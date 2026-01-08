@@ -60,3 +60,22 @@ Successfully ran `pnpm --filter @pantheon/web build` - compiled and generated st
 Started server with `pnpm --filter @pantheon/server dev`, then `curl http://localhost:3001/health` returned `{"status":"ok","timestamp":...}`.
 
 ---
+
+## Create packages/shared with Territory, Faction, GameState types
+**Completed:** 2026-01-08
+**Files Changed:**
+- `packages/shared/src/index.ts` — updated with complete type definitions
+
+**Implementation Notes:**
+Added comprehensive TypeScript types:
+- `Territory`: { id, q, r, owner, population, food, production } - using axial hex coordinates
+- `Faction`: { id, name, color, deityId, policies, territories[], resources }
+- `Policy`: { expansion: 0-100, aggression: 0-100, resourceFocus }
+- `GameState`: { tick, territories: Map, factions: Map, pendingBattles[] }
+- `SerializedGameState`: JSON-serializable version for WebSocket transport
+- `PendingBattle`: for combat resolution queue
+
+**Verification:**
+Successfully ran `pnpm --filter @pantheon/shared build` - TypeScript compiled without errors.
+
+---
