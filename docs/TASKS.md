@@ -44,8 +44,8 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 - [x] Define `Faction` type in `packages/shared` — `{ id, name, color, deityId, policies, territories[], resources }`
 - [x] Define `Policy` type — `{ expansion: 0-100, aggression: 0-100, resourceFocus: 'food' | 'production' | 'balanced' }`
-- [ ] Create faction factory in `apps/server/src/world/faction.ts` — `createFaction(name, color, startingTerritory)`
-- [ ] Implement starting position selection — place factions at maximum distance from each other on map
+- [x] Create faction factory in `apps/server/src/world/faction.ts` — `createFaction(name, color, startingTerritory)`
+- [x] Implement starting position selection — place factions at maximum distance from each other on map
 
 #### World Tick System
 

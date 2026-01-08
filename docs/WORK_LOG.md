@@ -172,3 +172,22 @@ Combined Tasks 9, 10, 11 into single implementation:
 Successfully ran `pnpm --filter @pantheon/web build` - compiled and generated static pages without errors.
 
 ---
+
+## Create faction factory and starting position selection
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/world/faction.ts` — created faction factory module
+
+**Implementation Notes:**
+- `createFaction(name, color, startingTerritory, deityId)` - creates new faction with default policies and starting resources
+- `selectStartingPositions(territories, count)` - finds optimal starting positions maximizing distance:
+  - For 2 factions: finds pair with maximum distance
+  - For 3+ factions: greedy algorithm starting from furthest from center
+- `assignTerritory()` / `removeTerritory()` - territory management helpers
+- Default policy: expansion 50, aggression 50, resourceFocus balanced
+- Starting resources: food 100, production 50, gold 0, faith 0
+
+**Verification:**
+Successfully ran `pnpm --filter @pantheon/server build` - TypeScript compiled without errors.
+
+---
