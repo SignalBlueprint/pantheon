@@ -19,6 +19,15 @@ import {
   markMessageAsRead,
   markAllMessagesAsRead,
 } from './systems/messages.js';
+import {
+  initializeSeason,
+  getCurrentSeason,
+  getTimeRemaining,
+  calculateRankings,
+  getPantheonHall,
+  getDeityLegacy,
+  processSeasonTick,
+} from './systems/seasons.js';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
@@ -188,6 +197,56 @@ app.post('/api/messages/mark-all-read', async (req, res) => {
   }
 });
 
+// Season API endpoints
+
+// GET /api/season - Get current season info
+app.get('/api/season', (_req, res) => {
+  const season = getCurrentSeason();
+  const timeRemaining = getTimeRemaining();
+
+  res.json({
+    season,
+    timeRemaining,
+  });
+});
+
+// GET /api/season/rankings - Get current rankings
+app.get('/api/season/rankings', (_req, res) => {
+  try {
+    const rankings = calculateRankings(gameState);
+    res.json({ rankings });
+  } catch (error) {
+    console.error('[API] Error fetching rankings:', error);
+    res.status(500).json({ error: 'Failed to fetch rankings' });
+  }
+});
+
+// GET /api/pantheon-hall - Get all past season winners
+app.get('/api/pantheon-hall', async (req, res) => {
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+
+  try {
+    const winners = await getPantheonHall(limit);
+    res.json({ winners });
+  } catch (error) {
+    console.error('[API] Error fetching Pantheon Hall:', error);
+    res.status(500).json({ error: 'Failed to fetch Pantheon Hall' });
+  }
+});
+
+// GET /api/legacy/:deityId - Get legacy records for a deity
+app.get('/api/legacy/:deityId', async (req, res) => {
+  const { deityId } = req.params;
+
+  try {
+    const legacy = await getDeityLegacy(deityId);
+    res.json({ legacy });
+  } catch (error) {
+    console.error('[API] Error fetching deity legacy:', error);
+    res.status(500).json({ error: 'Failed to fetch deity legacy' });
+  }
+});
+
 // Create HTTP server
 const server = createServer(app);
 
@@ -219,6 +278,12 @@ async function initializeServer(): Promise<void> {
       if (loadedState) {
         gameState = loadedState;
         console.log(`[Server] Loaded existing game state at tick ${gameState.tick}`);
+
+        // Initialize or load the current season
+        const season = await initializeSeason(gameState);
+        if (season) {
+          console.log(`[Server] Season active: ${season.name}`);
+        }
       } else {
         console.log('[Server] No existing state found, starting fresh');
       }
@@ -227,6 +292,10 @@ async function initializeServer(): Promise<void> {
 
   // Create and configure ticker
   ticker = new Ticker(gameState, {
+    onSeasonTick: async (state) => {
+      // Process season victory conditions and dominance tracking
+      await processSeasonTick(state);
+    },
     onPersistence: async (state) => {
       if (shouldSaveOnTick(state.tick)) {
         try {
@@ -237,10 +306,22 @@ async function initializeServer(): Promise<void> {
       }
     },
     onBroadcastState: (state) => {
+      // Get current season info for broadcast
+      const season = getCurrentSeason();
+
       // Broadcast state to all connected WebSocket clients
       const message = JSON.stringify({
         type: 'world_state',
-        payload: { tick: state.tick },
+        payload: {
+          tick: state.tick,
+          season: season ? {
+            id: season.id,
+            name: season.name,
+            status: season.status,
+            endsAt: season.endsAt,
+            timeRemaining: getTimeRemaining(),
+          } : null,
+        },
         timestamp: Date.now(),
       });
       wss.clients.forEach((client) => {

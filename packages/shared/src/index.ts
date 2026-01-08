@@ -195,6 +195,85 @@ export interface Notification {
   createdAt: number; // tick when created
 }
 
+// Season constants
+export const SEASON_DURATION_WEEKS = 8; // Default season duration
+export const SEASON_DOMINANCE_THRESHOLD = 0.6; // 60% territory control
+export const SEASON_DOMINANCE_HOURS = 48; // Hours of continuous control needed
+export const SEASON_DOMINANCE_TICKS = SEASON_DOMINANCE_HOURS * 3600; // In ticks
+
+// Victory types
+export type VictoryType = 'dominance' | 'power' | 'survival' | 'time';
+
+// Season status
+export type SeasonStatus = 'pending' | 'active' | 'ended' | 'archived';
+
+// Season ranking entry
+export interface SeasonRanking {
+  factionId: string;
+  deityId: string;
+  factionName: string;
+  rank: number;
+  score: number;
+  stats: {
+    territoriesHeld: number;
+    peakTerritories: number;
+    warsWon: number;
+    warsLost: number;
+    divinePowerSpent: number;
+    siegesCompleted: number;
+  };
+}
+
+// Season type
+export interface Season {
+  id: string;
+  shardId: string;
+  name: string;
+  startedAt: number; // timestamp
+  endsAt: number; // timestamp
+  status: SeasonStatus;
+  winnerId?: string; // faction ID
+  winnerDeityId?: string;
+  victoryType?: VictoryType;
+  finalRankings: SeasonRanking[];
+}
+
+// Legacy record for a player's season achievement
+export interface Legacy {
+  id: string;
+  deityId: string;
+  seasonId: string;
+  factionId?: string;
+  factionName: string;
+  factionColor?: string;
+  rank: number;
+  title?: string;
+  score: number;
+  stats: Record<string, unknown>;
+  rewards: string[];
+  premiumCurrencyEarned: number;
+  createdAt: number;
+}
+
+// Reward tiers
+export const REWARD_TIERS = {
+  first: { title: 'Ascended', currency: 500 },
+  second: { title: 'Exalted', currency: 200 },
+  third: { title: 'Exalted', currency: 200 },
+  topTen: { title: 'Blessed', currency: 50 },
+  participation: { title: 'Participant', currency: 10 },
+} as const;
+
+// Dominance tracking for continuous territory control
+export interface DominanceTracking {
+  id: string;
+  seasonId: string;
+  factionId: string;
+  startedAtTick: number;
+  territoryPercentage: number;
+  isActive: boolean;
+}
+
 // GameState - the complete world state
 export interface GameState {
   tick: number;
@@ -243,7 +322,10 @@ export type MessageType =
   | 'respond_proposal'
   | 'diplomatic_event'
   | 'send_message'
-  | 'relation_update';
+  | 'relation_update'
+  | 'season_update'
+  | 'season_end'
+  | 'dominance_alert';
 
 export interface GameMessage {
   type: MessageType;

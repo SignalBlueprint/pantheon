@@ -245,32 +245,32 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Season System
 
-- [ ] Add `seasons` table — `{ id, shard_id, started_at, ends_at, status, winner_id }`
-- [ ] Configure season duration — default 8 weeks, adjustable per shard
-- [ ] Create end-of-season countdown — show days/hours remaining in UI
-- [ ] Implement season end trigger — when time expires or dominance threshold reached
+- [x] Add `seasons` table — `{ id, shard_id, started_at, ends_at, status, winner_id }`
+- [x] Configure season duration — default 8 weeks, adjustable per shard
+- [x] Create end-of-season countdown — show days/hours remaining in UI
+- [x] Implement season end trigger — when time expires or dominance threshold reached
 
 #### Victory Conditions
 
-- [ ] Define dominance victory — control 60%+ of territories for 48 continuous hours
-- [ ] Define power victory — accumulate most total divine power over season
-- [ ] Define survival victory — last faction standing (all others eliminated or abandoned)
-- [ ] Calculate final rankings — score based on territories, population, divine power, wars won
+- [x] Define dominance victory — control 60%+ of territories for 48 continuous hours
+- [x] Define power victory — accumulate most total divine power over season
+- [x] Define survival victory — last faction standing (all others eliminated or abandoned)
+- [x] Calculate final rankings — score based on territories, population, divine power, wars won
 
 #### Legacy Rewards
 
-- [ ] Create `legacy` table — `{ deity_id, season_id, rank, title, rewards }`
-- [ ] Design reward tiers:
-  - [ ] 1st place: "Ascended" title, unique deity avatar, 500 premium currency
-  - [ ] 2nd-3rd: "Exalted" title, rare avatar frame, 200 premium currency
-  - [ ] Top 10: "Blessed" title, uncommon cosmetic, 50 premium currency
-  - [ ] Participation: Season badge, 10 premium currency
-- [ ] Implement Pantheon Hall — permanent display of all season winners with their faction history
-- [ ] Show legacy titles in-game — winner's title displays next to their name
+- [x] Create `legacy` table — `{ deity_id, season_id, rank, title, rewards }`
+- [x] Design reward tiers:
+  - [x] 1st place: "Ascended" title, unique deity avatar, 500 premium currency
+  - [x] 2nd-3rd: "Exalted" title, rare avatar frame, 200 premium currency
+  - [x] Top 10: "Blessed" title, uncommon cosmetic, 50 premium currency
+  - [x] Participation: Season badge, 10 premium currency
+- [x] Implement Pantheon Hall — permanent display of all season winners with their faction history
+- [x] Show legacy titles in-game — winner's title displays next to their name
 
 #### Season Transition
 
-- [ ] Archive completed season data — snapshot final state for history viewing
+- [x] Archive completed season data — snapshot final state for history viewing
 - [ ] Generate new map for next season — fresh terrain, new starting positions
 - [ ] Reset faction progress — all players start equal, only cosmetics persist
 - [ ] Allow early registration — players can claim starting spots before season begins

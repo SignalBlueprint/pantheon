@@ -519,3 +519,75 @@ All tasks in "2.1 Diplomacy and Deity Alliances" have been implemented:
 Total: 17/17 tasks complete
 
 ---
+
+## Implement Seasonal Resets with Legacy (Section 2.2)
+**Completed:** 2026-01-08
+**Files Changed:**
+- `apps/server/src/db/migrations/003_seasons_schema.sql` — SQL schema for seasons, legacy, season_archives, dominance_tracking tables
+- `apps/server/src/db/types.ts` — Added DbSeason, DbLegacy, DbSeasonArchive, DbDominanceTracking types
+- `apps/server/src/db/repositories.ts` — Added seasonRepo, legacyRepo, seasonArchiveRepo, dominanceTrackingRepo
+- `apps/server/src/systems/seasons.ts` — Complete season service with victory conditions, rankings, legacy rewards
+- `apps/server/src/simulation/ticker.ts` — Added onSeasonTick phase for victory condition checking
+- `apps/server/src/index.ts` — Added season API endpoints and ticker integration
+- `packages/shared/src/index.ts` — Added Season, Legacy, SeasonRanking, VictoryType, DominanceTracking types and REWARD_TIERS
+- `apps/web/src/components/ui/SeasonCountdown.tsx` — Season countdown UI with progress bar and standings preview
+- `apps/web/src/components/ui/PantheonHall.tsx` — Pantheon Hall UI showing past winners and personal legacy
+
+**Implementation Notes:**
+### Database Schema
+- seasons table: tracks seasonal cycles with shard_id, duration, status, winner
+- legacy table: permanent record of player achievements across seasons
+- season_archives table: stores historical snapshots of season final states
+- dominance_tracking table: tracks 60%+ territory control duration
+
+### Season System
+- Default 8-week season duration (configurable)
+- Season initializes automatically on server start
+- Real-time countdown in UI via WebSocket broadcasts
+- Season status: pending, active, ended, archived
+
+### Victory Conditions
+- **Dominance Victory**: Control 60%+ territories for 48 continuous hours
+- **Survival Victory**: Last faction standing (all others eliminated)
+- **Time/Power Victory**: Highest score when time expires
+- Score calculation: territories (100 pts), population (1 pt/10 pop), divine power (1 pt), reputation (2x)
+
+### Legacy Rewards
+- 1st place: "Ascended" title, 500 premium currency
+- 2nd-3rd place: "Exalted" title, 200 premium currency
+- Top 10: "Blessed" title, 50 premium currency
+- Participation: "Veteran" title, 10 premium currency
+- Automatic distribution on season end
+
+### API Endpoints
+- GET `/api/season` — returns current season info and time remaining
+- GET `/api/season/rankings` — returns current faction rankings
+- GET `/api/pantheon-hall` — returns all past season winners
+- GET `/api/legacy/:deityId` — returns legacy records for a deity
+
+### UI Components
+- SeasonCountdown: Displays countdown, progress bar, current standings, victory conditions, reward tiers
+- PantheonHall: Hall of Fame tab showing all winners, personal Legacy tab with stats
+
+**Verification:**
+Successfully ran `pnpm build` - all packages compiled without errors.
+
+---
+
+## HORIZON 2 SECTION 2.2 MOSTLY COMPLETE
+**Completed:** 2026-01-08
+
+Tasks in "2.2 Seasonal Resets with Legacy" implemented:
+- Season System (4/4 tasks)
+- Victory Conditions (4/4 tasks)
+- Legacy Rewards (6/6 tasks)
+- Season Transition (1/4 tasks - archive only, map generation/reset/registration are future scope)
+
+Total: 15/18 tasks complete
+
+Remaining tasks deferred:
+- Generate new map for next season (requires map regeneration system)
+- Reset faction progress (requires full game state reset)
+- Allow early registration (requires lobby/waiting room system)
+
+---

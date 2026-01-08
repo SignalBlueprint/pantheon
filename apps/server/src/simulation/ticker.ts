@@ -8,6 +8,9 @@ import { GameState, Territory, Faction, TICK_RATE_MS, DIVINE_POWER_MAX, DIVINE_P
 // Tick phase callbacks
 export type TickPhase = (state: GameState) => void;
 
+// Async tick phase callbacks (for database operations)
+export type AsyncTickPhase = (state: GameState) => Promise<void>;
+
 export interface TickerConfig {
   tickRate?: number;
   onResourceProduction?: TickPhase;
@@ -15,6 +18,7 @@ export interface TickerConfig {
   onAIDecisions?: TickPhase;
   onCombatResolution?: TickPhase;
   onSiegeProgress?: TickPhase;
+  onSeasonTick?: AsyncTickPhase;
   onPersistence?: TickPhase;
   onBroadcastState?: TickPhase;
 }
@@ -95,10 +99,18 @@ export class Ticker {
     // Phase 7: Siege progress
     this.config.onSiegeProgress?.(this.state);
 
-    // Phase 8: Persistence (save to database)
+    // Phase 8: Season tick (victory conditions, dominance tracking)
+    // This is async but we don't wait for it to avoid blocking the tick loop
+    if (this.config.onSeasonTick) {
+      this.config.onSeasonTick(this.state).catch((error) => {
+        console.error('[Ticker] Season tick error:', error);
+      });
+    }
+
+    // Phase 9: Persistence (save to database)
     this.config.onPersistence?.(this.state);
 
-    // Phase 9: Broadcast state
+    // Phase 10: Broadcast state
     this.config.onBroadcastState?.(this.state);
   }
 

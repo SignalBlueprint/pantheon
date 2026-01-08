@@ -26,6 +26,16 @@ import {
   DbMessageInsert,
   DbDiplomaticEvent,
   DbDiplomaticEventInsert,
+  DbSeason,
+  DbSeasonInsert,
+  DbSeasonUpdate,
+  DbLegacy,
+  DbLegacyInsert,
+  DbSeasonArchive,
+  DbSeasonArchiveInsert,
+  DbDominanceTracking,
+  DbDominanceTrackingInsert,
+  DbDominanceTrackingUpdate,
 } from './types.js';
 
 /**
@@ -662,5 +672,236 @@ export const diplomaticEventRepo = {
       .single();
     if (error) throw error;
     return data;
+  },
+};
+
+/**
+ * Season repository
+ */
+export const seasonRepo = {
+  async getById(id: string): Promise<DbSeason | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('seasons')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async getByShard(shardId: string): Promise<DbSeason[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('seasons')
+      .select('*')
+      .eq('shard_id', shardId)
+      .order('started_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getActive(shardId: string): Promise<DbSeason | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('seasons')
+      .select('*')
+      .eq('shard_id', shardId)
+      .eq('status', 'active')
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async create(season: DbSeasonInsert): Promise<DbSeason> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('seasons')
+      .insert(season)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: DbSeasonUpdate): Promise<DbSeason> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('seasons')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+};
+
+/**
+ * Legacy repository
+ */
+export const legacyRepo = {
+  async getByDeity(deityId: string): Promise<DbLegacy[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('legacy')
+      .select('*')
+      .eq('deity_id', deityId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getBySeason(seasonId: string): Promise<DbLegacy[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('legacy')
+      .select('*')
+      .eq('season_id', seasonId)
+      .order('rank', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getTopRanks(limit = 10): Promise<DbLegacy[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('legacy')
+      .select('*')
+      .eq('rank', 1)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(legacy: DbLegacyInsert): Promise<DbLegacy> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('legacy')
+      .insert(legacy)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async batchCreate(legacies: DbLegacyInsert[]): Promise<DbLegacy[]> {
+    if (!supabase || legacies.length === 0) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('legacy')
+      .insert(legacies)
+      .select();
+    if (error) throw error;
+    return data || [];
+  },
+};
+
+/**
+ * Season archive repository
+ */
+export const seasonArchiveRepo = {
+  async getBySeason(seasonId: string): Promise<DbSeasonArchive[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('season_archives')
+      .select('*')
+      .eq('season_id', seasonId);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByType(seasonId: string, archiveType: DbSeasonArchive['archive_type']): Promise<DbSeasonArchive | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('season_archives')
+      .select('*')
+      .eq('season_id', seasonId)
+      .eq('archive_type', archiveType)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async create(archive: DbSeasonArchiveInsert): Promise<DbSeasonArchive> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('season_archives')
+      .insert(archive)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+};
+
+/**
+ * Dominance tracking repository
+ */
+export const dominanceTrackingRepo = {
+  async getActive(seasonId: string): Promise<DbDominanceTracking[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('dominance_tracking')
+      .select('*')
+      .eq('season_id', seasonId)
+      .eq('is_active', true);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByFaction(seasonId: string, factionId: string): Promise<DbDominanceTracking | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('dominance_tracking')
+      .select('*')
+      .eq('season_id', seasonId)
+      .eq('faction_id', factionId)
+      .eq('is_active', true)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async create(tracking: DbDominanceTrackingInsert): Promise<DbDominanceTracking> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('dominance_tracking')
+      .insert(tracking)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, updates: DbDominanceTrackingUpdate): Promise<DbDominanceTracking> {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('dominance_tracking')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deactivate(id: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('dominance_tracking')
+      .update({ is_active: false })
+      .eq('id', id);
+    if (error) throw error;
+  },
+
+  async deactivateAll(seasonId: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('dominance_tracking')
+      .update({ is_active: false })
+      .eq('season_id', seasonId)
+      .eq('is_active', true);
+    if (error) throw error;
   },
 };

@@ -169,3 +169,81 @@ export type DbDiplomaticEventInsert = Omit<DbDiplomaticEvent, 'id' | 'created_at
 
 // Update types for new tables
 export type DbRelationUpdate = Partial<Omit<DbRelation, 'id' | 'shard_id' | 'faction_a' | 'faction_b' | 'created_at' | 'updated_at'>>;
+
+// Import season types from shared
+import {
+  VictoryType,
+  SeasonStatus,
+  SeasonRanking,
+} from '@pantheon/shared';
+
+/**
+ * Database row for seasons table
+ */
+export interface DbSeason {
+  id: string;
+  shard_id: string;
+  name: string;
+  started_at: string;
+  ends_at: string;
+  status: SeasonStatus;
+  winner_id: string | null;
+  winner_deity_id: string | null;
+  victory_type: VictoryType | null;
+  final_rankings: SeasonRanking[];
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Database row for legacy table
+ */
+export interface DbLegacy {
+  id: string;
+  deity_id: string;
+  season_id: string;
+  faction_id: string | null;
+  faction_name: string;
+  faction_color: string | null;
+  rank: number;
+  title: string | null;
+  score: number;
+  stats: Record<string, unknown>;
+  rewards: string[];
+  premium_currency_earned: number;
+  created_at: string;
+}
+
+/**
+ * Database row for season_archives table
+ */
+export interface DbSeasonArchive {
+  id: string;
+  season_id: string;
+  archive_type: 'final_state' | 'highlights' | 'statistics';
+  data: Record<string, unknown>;
+  created_at: string;
+}
+
+/**
+ * Database row for dominance_tracking table
+ */
+export interface DbDominanceTracking {
+  id: string;
+  season_id: string;
+  faction_id: string;
+  started_at_tick: number;
+  territory_percentage: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+// Insert types for season tables
+export type DbSeasonInsert = Omit<DbSeason, 'id' | 'created_at' | 'updated_at'>;
+export type DbLegacyInsert = Omit<DbLegacy, 'id' | 'created_at'>;
+export type DbSeasonArchiveInsert = Omit<DbSeasonArchive, 'id' | 'created_at'>;
+export type DbDominanceTrackingInsert = Omit<DbDominanceTracking, 'id' | 'created_at'>;
+
+// Update types for season tables
+export type DbSeasonUpdate = Partial<Omit<DbSeason, 'id' | 'shard_id' | 'created_at' | 'updated_at'>>;
+export type DbDominanceTrackingUpdate = Partial<Omit<DbDominanceTracking, 'id' | 'season_id' | 'faction_id' | 'created_at'>>;
