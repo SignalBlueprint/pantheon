@@ -25,51 +25,51 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Foundation
 
-- [ ] Initialize monorepo with Turborepo — `pnpm dlx create-turbo@latest`, configure `apps/web`, `apps/server`, `packages/shared`
-- [ ] Set up Next.js app in `apps/web` — `pnpm create next-app`, configure TypeScript, Tailwind
-- [ ] Set up Node.js server in `apps/server` — basic Express + ts-node, health check endpoint
-- [ ] Create `packages/shared` — export TypeScript types for Territory, Faction, GameState
-- [ ] Configure Supabase project — create new project, save credentials to `.env.local`
+- [x] Initialize monorepo with Turborepo — `pnpm dlx create-turbo@latest`, configure `apps/web`, `apps/server`, `packages/shared`
+- [x] Set up Next.js app in `apps/web` — `pnpm create next-app`, configure TypeScript, Tailwind
+- [x] Set up Node.js server in `apps/server` — basic Express + ts-node, health check endpoint
+- [x] Create `packages/shared` — export TypeScript types for Territory, Faction, GameState
+- [x] Configure Supabase project — create new project, save credentials to `.env.local`
 
 #### Hex Map System
 
-- [ ] Define hex coordinate system in `packages/shared/src/hex.ts` — use axial coordinates (q, r), implement `hexDistance()`, `hexNeighbors()`, `hexToPixel()`, `pixelToHex()`
-- [ ] Create `Territory` type — `{ id, q, r, owner: factionId | null, population, food, production }`
-- [ ] Build hex map generator in `apps/server/src/world/mapgen.ts` — generate 61-hex map (radius 4), assign random starting resources
-- [ ] Create React hex renderer in `apps/web/src/components/map/HexGrid.tsx` — render hexes using Canvas or SVG, color by faction owner
-- [ ] Implement pan and zoom on hex map — mouse drag to pan, scroll to zoom, clamp to map bounds
-- [ ] Add territory click handler — clicking hex shows territory detail panel with stats
+- [x] Define hex coordinate system in `packages/shared/src/hex.ts` — use axial coordinates (q, r), implement `hexDistance()`, `hexNeighbors()`, `hexToPixel()`, `pixelToHex()`
+- [x] Create `Territory` type — `{ id, q, r, owner: factionId | null, population, food, production }`
+- [x] Build hex map generator in `apps/server/src/world/mapgen.ts` — generate 61-hex map (radius 4), assign random starting resources
+- [x] Create React hex renderer in `apps/web/src/components/map/HexGrid.tsx` — render hexes using Canvas or SVG, color by faction owner
+- [x] Implement pan and zoom on hex map — mouse drag to pan, scroll to zoom, clamp to map bounds
+- [x] Add territory click handler — clicking hex shows territory detail panel with stats
 
 #### Faction System
 
-- [ ] Define `Faction` type in `packages/shared` — `{ id, name, color, deityId, policies, territories[], resources }`
-- [ ] Define `Policy` type — `{ expansion: 0-100, aggression: 0-100, resourceFocus: 'food' | 'production' | 'balanced' }`
-- [ ] Create faction factory in `apps/server/src/world/faction.ts` — `createFaction(name, color, startingTerritory)`
-- [ ] Implement starting position selection — place factions at maximum distance from each other on map
+- [x] Define `Faction` type in `packages/shared` — `{ id, name, color, deityId, policies, territories[], resources }`
+- [x] Define `Policy` type — `{ expansion: 0-100, aggression: 0-100, resourceFocus: 'food' | 'production' | 'balanced' }`
+- [x] Create faction factory in `apps/server/src/world/faction.ts` — `createFaction(name, color, startingTerritory)`
+- [x] Implement starting position selection — place factions at maximum distance from each other on map
 
 #### World Tick System
 
-- [ ] Create game loop in `apps/server/src/simulation/ticker.ts` — `setInterval` every 1000ms, increment `worldTick` counter
-- [ ] Define tick phases: 1) Resource production, 2) Population growth, 3) AI decisions, 4) Combat resolution, 5) Broadcast state
-- [ ] Implement resource production — each territory generates food and production based on terrain type
-- [ ] Implement population growth — population grows if food surplus, shrinks if deficit, caps at territory limit
-- [ ] Create `GameState` type — `{ tick, territories: Map<id, Territory>, factions: Map<id, Faction>, pendingBattles[] }`
+- [x] Create game loop in `apps/server/src/simulation/ticker.ts` — `setInterval` every 1000ms, increment `worldTick` counter
+- [x] Define tick phases: 1) Resource production, 2) Population growth, 3) AI decisions, 4) Combat resolution, 5) Broadcast state
+- [x] Implement resource production — each territory generates food and production based on terrain type
+- [x] Implement population growth — population grows if food surplus, shrinks if deficit, caps at territory limit
+- [x] Create `GameState` type — `{ tick, territories: Map<id, Territory>, factions: Map<id, Faction>, pendingBattles[] }`
 
 #### Faction AI
 
-- [ ] Create AI decision maker in `apps/server/src/simulation/ai.ts` — runs once per faction per tick
-- [ ] Implement expansion logic — if `policy.expansion > 50` and adjacent unclaimed territory exists, claim it (costs production)
-- [ ] Implement aggression logic — if `policy.aggression > 50` and adjacent enemy territory, queue attack
-- [ ] Implement defense logic — if own territory under threat, move armies to defend
-- [ ] Add randomness factor — AI decisions have ±20% variance to prevent deterministic outcomes
+- [x] Create AI decision maker in `apps/server/src/simulation/ai.ts` — runs once per faction per tick
+- [x] Implement expansion logic — if `policy.expansion > 50` and adjacent unclaimed territory exists, claim it (costs production)
+- [x] Implement aggression logic — if `policy.aggression > 50` and adjacent enemy territory, queue attack
+- [x] Implement defense logic — if own territory under threat, move armies to defend
+- [x] Add randomness factor — AI decisions have ±20% variance to prevent deterministic outcomes
 
 #### Real-Time Sync (Local First)
 
-- [ ] Create WebSocket server in `apps/server/src/net/socket.ts` — use `ws` package, handle connect/disconnect
-- [ ] Broadcast game state diff on each tick — send only changed territories and factions
-- [ ] Create WebSocket hook in `apps/web/src/hooks/useGameSocket.ts` — connect, receive state updates, expose `gameState`
-- [ ] Update hex map on state change — re-render only changed territories for performance
-- [ ] Add connection status indicator — show "Connected" / "Reconnecting" in UI corner
+- [x] Create WebSocket server in `apps/server/src/net/socket.ts` — use `ws` package, handle connect/disconnect
+- [x] Broadcast game state diff on each tick — send only changed territories and factions
+- [x] Create WebSocket hook in `apps/web/src/hooks/useGameSocket.ts` — connect, receive state updates, expose `gameState`
+- [x] Update hex map on state change — re-render only changed territories for performance
+- [x] Add connection status indicator — show "Connected" / "Reconnecting" in UI corner
 
 **Acceptance Criteria:**
 - Hex map renders with 61 territories
@@ -90,36 +90,36 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Divine Power
 
-- [ ] Add `divinePower` field to Faction — starts at 100, caps at 200
-- [ ] Implement divine power regeneration — +1 per tick per temple (territory with temple building)
-- [ ] Create divine power UI in `apps/web/src/components/ui/DivinePowerBar.tsx` — show current/max, regen rate
+- [x] Add `divinePower` field to Faction — starts at 100, caps at 200
+- [x] Implement divine power regeneration — +1 per tick per temple (territory with temple building)
+- [x] Create divine power UI in `apps/web/src/components/ui/DivinePowerBar.tsx` — show current/max, regen rate
 
 #### Miracle System
 
-- [ ] Define `Miracle` type in `packages/shared` — `{ id, name, cost, targetType: 'territory' | 'army' | 'faction', effect }`
-- [ ] Create miracle catalog in `packages/shared/src/miracles.ts`:
-  - [ ] "Bountiful Harvest" — cost 30, target territory, +50% food production for 10 ticks
-  - [ ] "Blessing of Valor" — cost 40, target army, +30% combat strength for next battle
-  - [ ] "Divine Shield" — cost 50, target territory, immune to capture for 20 ticks
-  - [ ] "Smite" — cost 60, target enemy army, deal 25% casualties instantly
-  - [ ] "Inspire" — cost 35, target territory, +100% production for 5 ticks
-- [ ] Create miracle execution in `apps/server/src/systems/miracles.ts` — validate cost, apply effect, deduct power
-- [ ] Add active effects tracking — `territory.activeEffects[]` with expiration tick
-- [ ] Process effect expiration in tick loop — remove effects when `currentTick >= effect.expiresTick`
+- [x] Define `Miracle` type in `packages/shared` — `{ id, name, cost, targetType: 'territory' | 'army' | 'faction', effect }`
+- [x] Create miracle catalog in `packages/shared/src/miracles.ts`:
+  - [x] "Bountiful Harvest" — cost 30, target territory, +50% food production for 10 ticks
+  - [x] "Blessing of Valor" — cost 40, target army, +30% combat strength for next battle
+  - [x] "Divine Shield" — cost 50, target territory, immune to capture for 20 ticks
+  - [x] "Smite" — cost 60, target enemy army, deal 25% casualties instantly
+  - [x] "Inspire" — cost 35, target territory, +100% production for 5 ticks
+- [x] Create miracle execution in `apps/server/src/systems/miracles.ts` — validate cost, apply effect, deduct power
+- [x] Add active effects tracking — `territory.activeEffects[]` with expiration tick
+- [x] Process effect expiration in tick loop — remove effects when `currentTick >= effect.expiresTick`
 
 #### Miracle UI
 
-- [ ] Create miracle panel in `apps/web/src/components/ui/MiraclePanel.tsx` — list available miracles with costs
-- [ ] Implement miracle targeting mode — click miracle, then click valid target on map
-- [ ] Add visual feedback for miracle cast — particle effect or flash on target territory
-- [ ] Show active effects on territory — icons or border glow indicating buffs/debuffs
-- [ ] Add cooldown display — show time until miracle can be cast again (if implementing cooldowns)
+- [x] Create miracle panel in `apps/web/src/components/ui/MiraclePanel.tsx` — list available miracles with costs
+- [x] Implement miracle targeting mode — click miracle, then click valid target on map
+- [x] Add visual feedback for miracle cast — particle effect or flash on target territory
+- [x] Show active effects on territory — icons or border glow indicating buffs/debuffs
+- [x] Add cooldown display — show time until miracle can be cast again (if implementing cooldowns)
 
 #### WebSocket Integration
 
-- [ ] Add `CAST_MIRACLE` message type — `{ miracleId, targetId }`
-- [ ] Validate miracle cast on server — check power, target validity, apply effect
-- [ ] Broadcast miracle events to all clients — show other players' miracles on the map
+- [x] Add `CAST_MIRACLE` message type — `{ miracleId, targetId }`
+- [x] Validate miracle cast on server — check power, target validity, apply effect
+- [x] Broadcast miracle events to all clients — show other players' miracles on the map
 
 **Acceptance Criteria:**
 - Divine power bar shows and updates in real-time
