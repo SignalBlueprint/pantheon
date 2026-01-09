@@ -35,12 +35,15 @@ function generateFactionId(): string {
  * @param color - Hex color for map display
  * @param startingTerritory - The territory where this faction starts
  * @param deityId - ID of the controlling deity (player or AI)
+ * @param currentTick - Current game tick (for tracking faction age)
  * @returns New Faction object
  */
 export function createFaction(
   name: string,
   color: string,
   startingTerritory: Territory,
+  deityId: string = 'ai',
+  currentTick: number = 0
   deityId: string = 'ai'
 ): Faction {
   const faction: Faction = {
@@ -52,6 +55,10 @@ export function createFaction(
     territories: [startingTerritory.id],
     resources: { ...STARTING_RESOURCES },
     divinePower: DIVINE_POWER_START,
+    reputation: 50, // Start with neutral reputation
+    specialization: null, // No specialization until unlocked
+    createdAtTick: currentTick,
+    specializationUnlockAvailable: false,
   };
 
   return faction;

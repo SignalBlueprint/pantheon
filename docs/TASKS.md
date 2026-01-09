@@ -139,37 +139,37 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Persistence Layer
 
-- [ ] Create Supabase tables:
-  - [ ] `shards` — `{ id, name, created_at, current_tick, status }`
-  - [ ] `factions` — `{ id, shard_id, deity_id, name, color, policies, divine_power }`
-  - [ ] `territories` — `{ id, shard_id, q, r, owner_id, population, food, production, active_effects }`
-  - [ ] `sieges` — `{ id, attacker_id, territory_id, started_at, progress, required_progress }`
-- [ ] Implement state save on tick — batch update changed records every 10 ticks
-- [ ] Implement state load on server start — query Supabase, reconstruct GameState
-- [ ] Add server graceful shutdown — save full state before exit
+- [x] Create Supabase tables:
+  - [x] `shards` — `{ id, name, created_at, current_tick, status }`
+  - [x] `factions` — `{ id, shard_id, deity_id, name, color, policies, divine_power }`
+  - [x] `territories` — `{ id, shard_id, q, r, owner_id, population, food, production, active_effects }`
+  - [x] `sieges` — `{ id, attacker_id, territory_id, started_at, progress, required_progress }`
+- [x] Implement state save on tick — batch update changed records every 10 ticks
+- [x] Implement state load on server start — query Supabase, reconstruct GameState
+- [x] Add server graceful shutdown — save full state before exit
 
 #### Siege System
 
-- [ ] Replace instant capture with siege mechanic — attacking army starts siege instead of capturing
-- [ ] Define siege progress — accumulates based on attacker army strength vs defender strength
-- [ ] Set siege duration — minimum 24 hours for undefended, 48+ hours for defended territories
-- [ ] Implement siege tick in `apps/server/src/simulation/siege.ts` — increment progress each tick
-- [ ] Complete siege when progress reaches threshold — transfer territory ownership, reset siege
-- [ ] Allow siege breaking — if defender army arrives, siege can be contested or lifted
+- [x] Replace instant capture with siege mechanic — attacking army starts siege instead of capturing
+- [x] Define siege progress — accumulates based on attacker army strength vs defender strength
+- [x] Set siege duration — minimum 24 hours for undefended, 48+ hours for defended territories
+- [x] Implement siege tick in `apps/server/src/simulation/siege.ts` — increment progress each tick
+- [x] Complete siege when progress reaches threshold — transfer territory ownership, reset siege
+- [x] Allow siege breaking — if defender army arrives, siege can be contested or lifted
 
 #### Notification System
 
-- [ ] Add `notifications` table — `{ id, deity_id, type, message, data, read, created_at }`
-- [ ] Generate notifications for: siege started, siege at 50%, siege at 90%, siege complete, territory lost
-- [ ] Create notification API endpoint — GET `/api/notifications` returns unread notifications
-- [ ] Build notification UI in `apps/web/src/components/ui/NotificationBell.tsx` — badge count, dropdown list
+- [x] Add `notifications` table — `{ id, deity_id, type, message, data, read, created_at }`
+- [x] Generate notifications for: siege started, siege at 50%, siege at 90%, siege complete, territory lost
+- [x] Create notification API endpoint — GET `/api/notifications` returns unread notifications
+- [x] Build notification UI in `apps/web/src/components/ui/NotificationBell.tsx` — badge count, dropdown list
 - [ ] Add push notification integration (future) — placeholder for FCM or web push
 
 #### Offline AI Enhancement
 
-- [ ] Improve AI to handle sieges — AI defends sieged territories, breaks enemy sieges
-- [ ] Add AI retreat logic — if siege is hopeless, AI may abandon territory to save army
-- [ ] Implement AI notifications — AI deity gets same notifications, may respond automatically
+- [x] Improve AI to handle sieges — AI defends sieged territories, breaks enemy sieges
+- [x] Add AI retreat logic — if siege is hopeless, AI may abandon territory to save army
+- [x] Implement AI notifications — AI deity gets same notifications, may respond automatically
 
 **Acceptance Criteria:**
 - Server can restart and resume game state from database
@@ -191,32 +191,32 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Diplomatic Relations
 
-- [ ] Create `relations` table — `{ faction_a, faction_b, status: 'neutral' | 'war' | 'alliance' | 'truce', since_tick }`
-- [ ] Default all factions to neutral — can pass through but not attack without declaring war
-- [ ] Implement war declaration — costs divine power, enables attacks, notifies target
-- [ ] Implement peace offer — sender proposes, receiver accepts/rejects
-- [ ] Implement alliance — shared vision, can't attack each other, trade bonus
+- [x] Create `relations` table — `{ faction_a, faction_b, status: 'neutral' | 'war' | 'alliance' | 'truce', since_tick }`
+- [x] Default all factions to neutral — can pass through but not attack without declaring war
+- [x] Implement war declaration — costs divine power, enables attacks, notifies target
+- [x] Implement peace offer — sender proposes, receiver accepts/rejects
+- [x] Implement alliance — shared vision, can't attack each other, trade bonus
 
 #### Alliance Benefits
 
-- [ ] Shared map vision — see allied faction's territories and armies
-- [ ] Trade routes — allied factions automatically trade surplus resources
-- [ ] Combined defense — allied armies can defend each other's territories
-- [ ] Alliance breaking — costs divine power, reputation penalty, cooldown before new alliance
+- [x] Shared map vision — see allied faction's territories and armies
+- [x] Trade routes — allied factions automatically trade surplus resources
+- [x] Combined defense — allied armies can defend each other's territories
+- [x] Alliance breaking — costs divine power, reputation penalty, cooldown before new alliance
 
 #### Diplomacy UI
 
-- [ ] Create diplomacy panel in `apps/web/src/components/ui/DiplomacyPanel.tsx` — list all factions with current relation
-- [ ] Add relation action buttons — "Declare War", "Propose Alliance", "Offer Peace"
-- [ ] Create message system — simple text messages between deities
-- [ ] Show diplomatic history — "X declared war on Y", "A and B formed alliance"
+- [x] Create diplomacy panel in `apps/web/src/components/ui/DiplomacyPanel.tsx` — list all factions with current relation
+- [x] Add relation action buttons — "Declare War", "Propose Alliance", "Offer Peace"
+- [x] Create message system — simple text messages between deities
+- [x] Show diplomatic history — "X declared war on Y", "A and B formed alliance"
 
 #### AI Diplomacy
 
-- [ ] AI evaluates alliance value — considers shared enemies, relative power, border length
-- [ ] AI accepts/rejects proposals — based on policy settings and strategic situation
-- [ ] AI declares wars — when aggression high and target is weak
-- [ ] AI breaks losing alliances — if ally is dragging them into unwinnable war
+- [x] AI evaluates alliance value — considers shared enemies, relative power, border length
+- [x] AI accepts/rejects proposals — based on policy settings and strategic situation
+- [x] AI declares wars — when aggression high and target is weak
+- [x] AI breaks losing alliances — if ally is dragging them into unwinnable war
 
 **New Infrastructure Required:**
 - `relations` table in Supabase
@@ -245,35 +245,35 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Season System
 
-- [ ] Add `seasons` table — `{ id, shard_id, started_at, ends_at, status, winner_id }`
-- [ ] Configure season duration — default 8 weeks, adjustable per shard
-- [ ] Create end-of-season countdown — show days/hours remaining in UI
-- [ ] Implement season end trigger — when time expires or dominance threshold reached
+- [x] Add `seasons` table — `{ id, shard_id, started_at, ends_at, status, winner_id }`
+- [x] Configure season duration — default 8 weeks, adjustable per shard
+- [x] Create end-of-season countdown — show days/hours remaining in UI
+- [x] Implement season end trigger — when time expires or dominance threshold reached
 
 #### Victory Conditions
 
-- [ ] Define dominance victory — control 60%+ of territories for 48 continuous hours
-- [ ] Define power victory — accumulate most total divine power over season
-- [ ] Define survival victory — last faction standing (all others eliminated or abandoned)
-- [ ] Calculate final rankings — score based on territories, population, divine power, wars won
+- [x] Define dominance victory — control 60%+ of territories for 48 continuous hours
+- [x] Define power victory — accumulate most total divine power over season
+- [x] Define survival victory — last faction standing (all others eliminated or abandoned)
+- [x] Calculate final rankings — score based on territories, population, divine power, wars won
 
 #### Legacy Rewards
 
-- [ ] Create `legacy` table — `{ deity_id, season_id, rank, title, rewards }`
-- [ ] Design reward tiers:
-  - [ ] 1st place: "Ascended" title, unique deity avatar, 500 premium currency
-  - [ ] 2nd-3rd: "Exalted" title, rare avatar frame, 200 premium currency
-  - [ ] Top 10: "Blessed" title, uncommon cosmetic, 50 premium currency
-  - [ ] Participation: Season badge, 10 premium currency
-- [ ] Implement Pantheon Hall — permanent display of all season winners with their faction history
-- [ ] Show legacy titles in-game — winner's title displays next to their name
+- [x] Create `legacy` table — `{ deity_id, season_id, rank, title, rewards }`
+- [x] Design reward tiers:
+  - [x] 1st place: "Ascended" title, unique deity avatar, 500 premium currency
+  - [x] 2nd-3rd: "Exalted" title, rare avatar frame, 200 premium currency
+  - [x] Top 10: "Blessed" title, uncommon cosmetic, 50 premium currency
+  - [x] Participation: Season badge, 10 premium currency
+- [x] Implement Pantheon Hall — permanent display of all season winners with their faction history
+- [x] Show legacy titles in-game — winner's title displays next to their name
 
 #### Season Transition
 
-- [ ] Archive completed season data — snapshot final state for history viewing
-- [ ] Generate new map for next season — fresh terrain, new starting positions
-- [ ] Reset faction progress — all players start equal, only cosmetics persist
-- [ ] Allow early registration — players can claim starting spots before season begins
+- [x] Archive completed season data — snapshot final state for history viewing
+- [x] Generate new map for next season — fresh terrain, new starting positions
+- [x] Reset faction progress — all players start equal, only cosmetics persist
+- [x] Allow early registration — players can claim starting spots before season begins
 
 **New Infrastructure Required:**
 - `seasons` table
@@ -303,28 +303,28 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 #### Specialization Framework
 
-- [ ] Define specialization unlock trigger — survive 100 ticks, control 5+ territories
-- [ ] Create `specializations` in `packages/shared` — each with passive bonuses and unique abilities
-- [ ] Design four initial paths:
-  - [ ] **Maritime Dominion** — coastal territories produce ships, can settle islands, naval combat bonus
-  - [ ] **Mountain Fortress** — mountain territories have defense bonus, mining produces rare resources
-  - [ ] **Fertile Plains** — flat territories have 2x population cap, food export generates gold
-  - [ ] **Nomadic Horde** — no permanent cities, armies move 2x speed, can raid without siege
+- [x] Define specialization unlock trigger — survive 100 ticks, control 5+ territories
+- [x] Create `specializations` in `packages/shared` — each with passive bonuses and unique abilities
+- [x] Design four initial paths:
+  - [x] **Maritime Dominion** — coastal territories produce ships, can settle islands, naval combat bonus
+  - [x] **Mountain Fortress** — mountain territories have defense bonus, mining produces rare resources
+  - [x] **Fertile Plains** — flat territories have 2x population cap, food export generates gold
+  - [x] **Nomadic Horde** — no permanent cities, armies move 2x speed, can raid without siege
 
 #### Specialization Implementation
 
-- [ ] Add `specialization` field to Faction — null until unlocked, then one of four types
-- [ ] Implement Maritime abilities — ship unit type, overseas movement, island colonization
-- [ ] Implement Fortress abilities — defense multiplier, mineshaft building, rare resource type
-- [ ] Implement Plains abilities — population modifier, trade route bonuses, granary building
-- [ ] Implement Nomadic abilities — camp instead of city, raid action, movement speed bonus
+- [x] Add `specialization` field to Faction — null until unlocked, then one of four types
+- [x] Implement Maritime abilities — ship unit type, overseas movement, island colonization
+- [x] Implement Fortress abilities — defense multiplier, mineshaft building, rare resource type
+- [x] Implement Plains abilities — population modifier, trade route bonuses, granary building
+- [x] Implement Nomadic abilities — camp instead of city, raid action, movement speed bonus
 
 #### UI for Specialization
 
-- [ ] Create specialization selection modal — appears when unlock triggered, shows all four paths
-- [ ] Add specialization indicator to faction panel — icon and description of chosen path
-- [ ] Show specialization-specific buildings — only available after path chosen
-- [ ] Display locked paths — show what you didn't choose, can't be changed
+- [x] Create specialization selection modal — appears when unlock triggered, shows all four paths
+- [x] Add specialization indicator to faction panel — icon and description of chosen path
+- [x] Show specialization-specific buildings — only available after path chosen
+- [x] Display locked paths — show what you didn't choose, can't be changed
 
 **New Infrastructure Required:**
 - `specialization` column on factions table
@@ -365,13 +365,13 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 **Tasks:**
 
-- [ ] Define `myths` table — `{ id, faction_id, event_type, event_data, generated_text, tick_created }`
-- [ ] Create myth templates for each event type — "The [adjective] [noun] of [location], when [event description]"
-- [ ] Implement myth trigger detection — large battle (100+ casualties), miracle cast, etc.
-- [ ] Build myth generation service — select template, fill variables, save to database
-- [ ] Create temple view UI — scrollable list of faction's myths
-- [ ] Display myths to other players — visible when viewing rival faction's temples
-- [ ] Add myth sharing — players can share myths to external platforms
+- [x] Define `myths` table — `{ id, faction_id, event_type, event_data, generated_text, tick_created }`
+- [x] Create myth templates for each event type — "The [adjective] [noun] of [location], when [event description]"
+- [x] Implement myth trigger detection — large battle (100+ casualties), miracle cast, etc.
+- [x] Build myth generation service — select template, fill variables, save to database
+- [x] Create temple view UI — scrollable list of faction's myths
+- [x] Display myths to other players — visible when viewing rival faction's temples
+- [x] Add myth sharing — players can share myths to external platforms
 
 **Acceptance Criteria:**
 - At least 5 event types generate myths
@@ -402,15 +402,15 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 **Tasks:**
 
-- [ ] Define `champions` table — `{ id, faction_id, name, type, stats, age, blessed, territory_id }`
-- [ ] Implement champion spawn logic — 1% chance per tick per territory with 1000+ population
-- [ ] Generate champion names — use name generator appropriate to faction culture
-- [ ] Create General champion type — leads army, provides combat bonus, can be assigned to armies
-- [ ] Implement champion aging — age increases each tick, death when age > lifespan
-- [ ] Add "Bless Champion" miracle — costs 80 divine power, +50% stats, +50% lifespan
-- [ ] Create champion death handling — generate myth, remove from game, notify deity
-- [ ] Build champion UI panel — list of faction's champions with stats and location
-- [ ] Add champion to army assignment — dropdown to attach champion to army
+- [x] Define `champions` table — `{ id, faction_id, name, type, stats, age, blessed, territory_id }`
+- [x] Implement champion spawn logic — 1% chance per tick per territory with 1000+ population
+- [x] Generate champion names — use name generator appropriate to faction culture
+- [x] Create General champion type — leads army, provides combat bonus, can be assigned to armies
+- [x] Implement champion aging — age increases each tick, death when age > lifespan
+- [x] Add "Bless Champion" miracle — costs 80 divine power, +50% stats, +50% lifespan
+- [x] Create champion death handling — generate myth, remove from game, notify deity
+- [x] Build champion UI panel — list of faction's champions with stats and location
+- [x] Add champion to army assignment — dropdown to attach champion to army
 
 **Acceptance Criteria:**
 - Champions spawn organically in successful factions
@@ -432,11 +432,11 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 **Goal:** Record all game events in replayable format.
 
-- [ ] Design event log schema — `{ tick, event_type, data, shard_id }`
-- [ ] Implement event recording — log all state changes (territory capture, battle, miracle, etc.)
-- [ ] Create event compression — batch events, compress for storage
-- [ ] Estimate storage requirements — calculate bytes per tick, project season cost
-- [ ] Set up archive storage — S3 or Supabase Storage for completed seasons
+- [x] Design event log schema — `{ tick, event_type, data, shard_id }`
+- [x] Implement event recording — log all state changes (territory capture, battle, miracle, etc.)
+- [x] Create event compression — batch events, compress for storage
+- [x] Estimate storage requirements — calculate bytes per tick, project season cost
+- [x] Set up archive storage — S3 or Supabase Storage for completed seasons
 
 **Estimated Effort:** 12-16 hours
 
@@ -444,12 +444,12 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 **Goal:** Playback recorded history with time controls.
 
-- [ ] Build replay loader — fetch archived season data, decompress
-- [ ] Create replay state machine — reconstruct game state at any tick from events
-- [ ] Implement time scrubbing — slider to jump to any point in season
-- [ ] Add playback speed controls — 1x, 10x, 100x, 1000x speed
-- [ ] Build replay viewer UI — same map view but read-only, with timeline controls
-- [ ] Implement smooth interpolation — animate between ticks for visual clarity
+- [x] Build replay loader — fetch archived season data, decompress
+- [x] Create replay state machine — reconstruct game state at any tick from events
+- [x] Implement time scrubbing — slider to jump to any point in season
+- [x] Add playback speed controls — 1x, 10x, 100x, 1000x speed
+- [x] Build replay viewer UI — same map view but read-only, with timeline controls
+- [x] Implement smooth interpolation — animate between ticks for visual clarity
 
 **Estimated Effort:** 24-30 hours
 
@@ -457,12 +457,12 @@ This task list implements Pantheon from zero to playable MVP. The focus is Phase
 
 **Goal:** Curated highlights and community features.
 
-- [ ] Create highlight detection — algorithm identifies "interesting" moments (large battles, dramatic reversals)
-- [ ] Build highlight reel generator — compile top 10 moments from a season
-- [ ] Implement community voting — players upvote best moments
-- [ ] Create "Eternal Canon" view — curated hall of fame moments across all shards/seasons
-- [ ] Add social sharing — export clips as video or GIF
-- [ ] Enable spectator links — shareable URLs that open replay at specific moment
+- [x] Create highlight detection — algorithm identifies "interesting" moments (large battles, dramatic reversals)
+- [x] Build highlight reel generator — compile top 10 moments from a season
+- [x] Implement community voting — players upvote best moments
+- [x] Create "Eternal Canon" view — curated hall of fame moments across all shards/seasons
+- [x] Add social sharing — export clips as video or GIF
+- [x] Enable spectator links — shareable URLs that open replay at specific moment
 
 **Estimated Effort:** 30-40 hours
 

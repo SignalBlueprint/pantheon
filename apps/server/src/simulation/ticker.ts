@@ -3,10 +3,21 @@
  * Manages the world tick cycle and dispatches to subsystems
  */
 
+import { GameState, Territory, Faction, TICK_RATE_MS, DIVINE_POWER_MAX, DIVINE_POWER_REGEN_PER_TEMPLE, createInitialGameState } from '@pantheon/shared';
+import {
+  getFoodProductionMultiplier,
+  getProductionMultiplier,
+  getPopulationCapMultiplier,
+  getTradeBonus,
+} from '../systems/specialization.js';
+export { createInitialGameState };
 import { GameState, Territory, Faction, TICK_RATE_MS, DIVINE_POWER_MAX, DIVINE_POWER_REGEN_PER_TEMPLE } from '@pantheon/shared';
 
 // Tick phase callbacks
 export type TickPhase = (state: GameState) => void;
+
+// Async tick phase callbacks (for database operations)
+export type AsyncTickPhase = (state: GameState) => Promise<void>;
 
 export interface TickerConfig {
   tickRate?: number;
@@ -14,6 +25,11 @@ export interface TickerConfig {
   onPopulationGrowth?: TickPhase;
   onAIDecisions?: TickPhase;
   onCombatResolution?: TickPhase;
+  onSiegeProgress?: TickPhase;
+  onSpecializationTick?: TickPhase;
+  onChampionTick?: AsyncTickPhase;
+  onSeasonTick?: AsyncTickPhase;
+  onPersistence?: TickPhase;
   onBroadcastState?: TickPhase;
 }
 
@@ -64,6 +80,8 @@ export class Ticker {
   /**
    * Execute one tick of the game loop
    * Phases: 1) Divine power regen, 2) Effect expiration, 3) Resource production,
+   *         4) Population growth, 5) AI decisions, 6) Combat resolution,
+   *         7) Siege progress, 8) Persistence, 9) Broadcast state
    *         4) Population growth, 5) AI decisions, 6) Combat resolution, 7) Broadcast state
    */
   tick(): void {
@@ -89,6 +107,32 @@ export class Ticker {
     // Phase 6: Combat resolution
     this.config.onCombatResolution?.(this.state);
 
+    // Phase 7: Siege progress
+    this.config.onSiegeProgress?.(this.state);
+
+    // Phase 8: Specialization unlocks
+    this.config.onSpecializationTick?.(this.state);
+
+    // Phase 9: Champion spawning and aging
+    // This is async but we don't wait for it to avoid blocking the tick loop
+    if (this.config.onChampionTick) {
+      this.config.onChampionTick(this.state).catch((error) => {
+        console.error('[Ticker] Champion tick error:', error);
+      });
+    }
+
+    // Phase 10: Season tick (victory conditions, dominance tracking)
+    // This is async but we don't wait for it to avoid blocking the tick loop
+    if (this.config.onSeasonTick) {
+      this.config.onSeasonTick(this.state).catch((error) => {
+        console.error('[Ticker] Season tick error:', error);
+      });
+    }
+
+    // Phase 11: Persistence (save to database)
+    this.config.onPersistence?.(this.state);
+
+    // Phase 12: Broadcast state
     // Phase 7: Broadcast state
     this.config.onBroadcastState?.(this.state);
   }
@@ -105,6 +149,27 @@ export class Ticker {
       const faction = this.state.factions.get(territory.owner);
       if (!faction) continue;
 
+      // Calculate effect multipliers (from active miracles)
+      let effectFoodMultiplier = 1;
+      let effectProductionMultiplier = 1;
+      for (const effect of territory.activeEffects) {
+        if (effect.modifier.foodMultiplier) {
+          effectFoodMultiplier *= effect.modifier.foodMultiplier;
+        }
+        if (effect.modifier.productionMultiplier) {
+          effectProductionMultiplier *= effect.modifier.productionMultiplier;
+        }
+      }
+
+      // Apply specialization multipliers
+      const specFoodMultiplier = getFoodProductionMultiplier(faction);
+      const specProductionMultiplier = getProductionMultiplier(faction);
+
+      // Combine all multipliers
+      const foodMultiplier = effectFoodMultiplier * specFoodMultiplier;
+      const productionMultiplier = effectProductionMultiplier * specProductionMultiplier;
+
+      // Base production rates with all multipliers applied
       // Calculate effect multipliers
       let foodMultiplier = 1;
       let productionMultiplier = 1;
@@ -123,12 +188,27 @@ export class Ticker {
 
       faction.resources.food += foodProduced;
       faction.resources.production += productionProduced;
+
+      // Plains specialization: Trade bonus converts surplus food to gold
+      const tradeBonus = getTradeBonus(faction);
+      if (tradeBonus > 0 && faction.resources.food > 1000) {
+        const surplusFood = faction.resources.food - 1000;
+        const goldFromTrade = Math.floor(surplusFood * tradeBonus);
+        if (goldFromTrade > 0) {
+          faction.resources.gold += goldFromTrade;
+          faction.resources.food -= Math.floor(surplusFood * 0.5); // Consume half of surplus
+        }
+      }
     }
   }
 
   /**
    * Process population growth for all territories
    * Growth if food surplus, shrink if deficit, cap at territory limit
+   * Plains specialization increases population cap
+   */
+  private processPopulationGrowth(): void {
+    const BASE_POPULATION_CAP = 1000;
    */
   private processPopulationGrowth(): void {
     const POPULATION_CAP = 1000;
@@ -141,6 +221,10 @@ export class Ticker {
       const faction = this.state.factions.get(territory.owner);
       if (!faction) continue;
 
+      // Apply specialization population cap multiplier (Plains = 2.0x)
+      const popCapMultiplier = getPopulationCapMultiplier(faction);
+      const populationCap = Math.floor(BASE_POPULATION_CAP * popCapMultiplier);
+
       // Calculate food consumption
       const foodConsumed = Math.floor(territory.population * FOOD_PER_POP);
 
@@ -148,6 +232,7 @@ export class Ticker {
         // Food surplus - population grows
         faction.resources.food -= foodConsumed;
         const growth = Math.floor(territory.population * GROWTH_RATE);
+        territory.population = Math.min(populationCap, territory.population + growth);
         territory.population = Math.min(POPULATION_CAP, territory.population + growth);
       } else {
         // Food deficit - population shrinks

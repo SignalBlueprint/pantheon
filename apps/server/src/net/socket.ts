@@ -8,10 +8,23 @@ import {
   SerializedGameState,
   Territory,
   Faction,
+  Siege,
+  DiplomaticRelation,
   GameMessage,
   MessageType,
 } from '@pantheon/shared';
 import { castMiracle, MiracleCastResult } from '../systems/miracles.js';
+import {
+  declareWar,
+  offerPeace,
+  respondToPeace,
+  proposeAlliance,
+  respondToAlliance,
+  breakAlliance,
+  DiplomacyResult,
+} from '../systems/diplomacy.js';
+import { sendMessage, SendMessageResult } from '../systems/messages.js';
+import { chooseSpecialization, ChooseSpecializationResult } from '../systems/specialization.js';
 
 interface Client {
   ws: WebSocket;
@@ -27,6 +40,37 @@ interface CastMiraclePayload {
 
 interface SelectFactionPayload {
   factionId: string;
+}
+
+interface DeclareWarPayload {
+  targetId: string;
+}
+
+interface OfferPeacePayload {
+  targetId: string;
+}
+
+interface ProposeAlliancePayload {
+  targetId: string;
+}
+
+interface BreakAlliancePayload {
+  targetId: string;
+}
+
+interface RespondProposalPayload {
+  proposerId: string;
+  accept: boolean;
+  proposalType: 'peace' | 'alliance';
+}
+
+interface SendMessagePayload {
+  receiverId: string;
+  content: string;
+}
+
+interface ChooseSpecializationPayload {
+  specializationType: 'maritime' | 'fortress' | 'plains' | 'nomadic';
 }
 
 /**
@@ -110,6 +154,27 @@ export class GameSocketServer {
         client.factionId = selectPayload.factionId;
         console.log(`[Socket] Client ${client.id} selected faction: ${client.factionId}`);
         break;
+      case 'declare_war':
+        this.handleDeclareWar(client, message.payload as DeclareWarPayload);
+        break;
+      case 'offer_peace':
+        this.handleOfferPeace(client, message.payload as OfferPeacePayload);
+        break;
+      case 'propose_alliance':
+        this.handleProposeAlliance(client, message.payload as ProposeAlliancePayload);
+        break;
+      case 'break_alliance':
+        this.handleBreakAlliance(client, message.payload as BreakAlliancePayload);
+        break;
+      case 'respond_proposal':
+        this.handleRespondProposal(client, message.payload as RespondProposalPayload);
+        break;
+      case 'send_message':
+        this.handleSendMessage(client, message.payload as SendMessagePayload);
+        break;
+      case 'choose_specialization':
+        this.handleChooseSpecialization(client, message.payload as ChooseSpecializationPayload);
+        break;
       default:
         console.log(`[Socket] Unhandled message type: ${message.type}`);
     }
@@ -167,6 +232,233 @@ export class GameSocketServer {
         timestamp: Date.now(),
       });
     }
+  }
+
+  /**
+   * Handle declare war request
+   */
+  private handleDeclareWar(client: Client, payload: DeclareWarPayload): void {
+    if (!this.gameState || !client.factionId) {
+      this.sendDiplomacyResult(client, { success: false, error: 'Not initialized' });
+      return;
+    }
+
+    const result = declareWar(this.gameState, client.factionId, payload.targetId);
+    this.sendDiplomacyResult(client, result);
+
+    if (result.success) {
+      this.broadcastDiplomaticEvent(result.eventType!, client.factionId, payload.targetId, result.relation);
+    }
+  }
+
+  /**
+   * Handle offer peace request
+   */
+  private handleOfferPeace(client: Client, payload: OfferPeacePayload): void {
+    if (!this.gameState || !client.factionId) {
+      this.sendDiplomacyResult(client, { success: false, error: 'Not initialized' });
+      return;
+    }
+
+    const result = offerPeace(this.gameState, client.factionId, payload.targetId);
+    this.sendDiplomacyResult(client, result);
+
+    if (result.success) {
+      this.broadcastDiplomaticEvent(result.eventType!, client.factionId, payload.targetId, result.relation);
+    }
+  }
+
+  /**
+   * Handle propose alliance request
+   */
+  private handleProposeAlliance(client: Client, payload: ProposeAlliancePayload): void {
+    if (!this.gameState || !client.factionId) {
+      this.sendDiplomacyResult(client, { success: false, error: 'Not initialized' });
+      return;
+    }
+
+    const result = proposeAlliance(this.gameState, client.factionId, payload.targetId);
+    this.sendDiplomacyResult(client, result);
+
+    if (result.success) {
+      this.broadcastDiplomaticEvent(result.eventType!, client.factionId, payload.targetId, result.relation);
+    }
+  }
+
+  /**
+   * Handle break alliance request
+   */
+  private handleBreakAlliance(client: Client, payload: BreakAlliancePayload): void {
+    if (!this.gameState || !client.factionId) {
+      this.sendDiplomacyResult(client, { success: false, error: 'Not initialized' });
+      return;
+    }
+
+    const result = breakAlliance(this.gameState, client.factionId, payload.targetId);
+    this.sendDiplomacyResult(client, result);
+
+    if (result.success) {
+      this.broadcastDiplomaticEvent(result.eventType!, client.factionId, payload.targetId, result.relation);
+    }
+  }
+
+  /**
+   * Handle respond to proposal request
+   */
+  private handleRespondProposal(client: Client, payload: RespondProposalPayload): void {
+    if (!this.gameState || !client.factionId) {
+      this.sendDiplomacyResult(client, { success: false, error: 'Not initialized' });
+      return;
+    }
+
+    let result: DiplomacyResult;
+    if (payload.proposalType === 'peace') {
+      result = respondToPeace(this.gameState, client.factionId, payload.proposerId, payload.accept);
+    } else {
+      result = respondToAlliance(this.gameState, client.factionId, payload.proposerId, payload.accept);
+    }
+
+    this.sendDiplomacyResult(client, result);
+
+    if (result.success && result.eventType) {
+      this.broadcastDiplomaticEvent(result.eventType, client.factionId, payload.proposerId, result.relation);
+    }
+  }
+
+  /**
+   * Handle send message request
+   */
+  private async handleSendMessage(client: Client, payload: SendMessagePayload): Promise<void> {
+    if (!this.gameState || !client.factionId) {
+      this.sendToClient(client, {
+        type: 'send_message',
+        payload: { success: false, error: 'Not initialized' },
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    const shardId = this.gameState.shardId || 'default';
+    const result = await sendMessage(
+      shardId,
+      client.factionId,
+      payload.receiverId,
+      payload.content
+    );
+
+    // Send result to sender
+    this.sendToClient(client, {
+      type: 'send_message',
+      payload: result,
+      timestamp: Date.now(),
+    });
+
+    // If successful, notify the receiver if they're connected
+    if (result.success && result.message) {
+      this.sendToFaction(payload.receiverId, {
+        type: 'send_message',
+        payload: { received: true, message: result.message },
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  /**
+   * Handle specialization choice request from client
+   */
+  private handleChooseSpecialization(client: Client, payload: ChooseSpecializationPayload): void {
+    if (!this.gameState) {
+      this.sendToClient(client, {
+        type: 'specialization_chosen',
+        payload: { success: false, error: 'Game state not initialized' },
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    if (!client.factionId) {
+      this.sendToClient(client, {
+        type: 'specialization_chosen',
+        payload: { success: false, error: 'No faction selected' },
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    const faction = this.gameState.factions.get(client.factionId);
+    if (!faction) {
+      this.sendToClient(client, {
+        type: 'specialization_chosen',
+        payload: { success: false, error: 'Faction not found' },
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    const result = chooseSpecialization(faction, payload.specializationType);
+
+    // Send result to the client
+    this.sendToClient(client, {
+      type: 'specialization_chosen',
+      payload: result,
+      timestamp: Date.now(),
+    });
+
+    // If successful, broadcast the choice to all clients
+    if (result.success) {
+      this.broadcast({
+        type: 'specialization_chosen',
+        payload: {
+          factionId: faction.id,
+          factionName: faction.name,
+          specialization: result.specialization,
+        },
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  /**
+   * Send message to a specific faction (all clients connected as that faction)
+   */
+  private sendToFaction(factionId: string, message: GameMessage): void {
+    for (const client of this.clients.values()) {
+      if (client.factionId === factionId && client.ws.readyState === WebSocket.OPEN) {
+        client.ws.send(JSON.stringify(message));
+      }
+    }
+  }
+
+  /**
+   * Send diplomacy result to client
+   */
+  private sendDiplomacyResult(client: Client, result: DiplomacyResult): void {
+    this.sendToClient(client, {
+      type: 'diplomatic_event',
+      payload: result,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * Broadcast a diplomatic event to all clients
+   */
+  private broadcastDiplomaticEvent(
+    eventType: string,
+    initiatorId: string,
+    targetId: string,
+    relation?: DiplomaticRelation
+  ): void {
+    this.broadcast({
+      type: 'diplomatic_event',
+      payload: {
+        eventType,
+        initiatorId,
+        targetId,
+        relation,
+      },
+      timestamp: Date.now(),
+    });
   }
 
   private sendToClient(client: Client, message: GameMessage): void {
@@ -291,6 +583,24 @@ export class GameSocketServer {
       factions[id] = f;
     }
 
+    const sieges: Record<string, Siege> = {};
+    for (const [id, s] of state.sieges) {
+      sieges[id] = s;
+    }
+
+    const relations: Record<string, DiplomaticRelation> = {};
+    for (const [id, r] of state.relations) {
+      relations[id] = r;
+    }
+
+    return {
+      tick: state.tick,
+      shardId: state.shardId,
+      territories,
+      factions,
+      pendingBattles: state.pendingBattles,
+      sieges,
+      relations,
     return {
       tick: state.tick,
       territories,
