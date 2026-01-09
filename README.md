@@ -4,7 +4,21 @@ A persistent world deity game. Guide your civilization through policy and miracl
 
 ## Status
 
-Initialized — awaiting first vision scan
+```
+[███████████████████░] 99% complete
+```
+
+**Current Focus:** Final Polish & Deployment
+**Last Updated:** 2026-01-09
+
+| Section | Progress | Tasks |
+|---------|----------|-------|
+| Horizon 1 | █████████░ 99% | 70/71 |
+| Horizon 2 | ██████████ 100% | 53/53 |
+| Horizon 3 | ██████████ 100% | 16/16 |
+| Moonshot  | ██████████ 100% | 17/17 |
+
+See [docs/PROGRESS.md](docs/PROGRESS.md) for full details.
 
 ## Quick Start
 ```bash
