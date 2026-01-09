@@ -174,6 +174,7 @@ export function getAvailableBuildings(specialization: SpecializationType): Build
   }
   return available;
 }
+export type BuildingType = 'temple' | 'farm' | 'workshop' | 'fortress';
 
 // Territory type - uses axial hex coordinates (q, r)
 export interface Territory {
@@ -998,6 +999,12 @@ export interface GameState {
   pendingBattles: PendingBattle[];
   sieges: Map<string, Siege>; // keyed by siege ID
   relations: Map<string, DiplomaticRelation>; // keyed by relation ID
+// GameState - the complete world state
+export interface GameState {
+  tick: number;
+  territories: Map<string, Territory>;
+  factions: Map<string, Faction>;
+  pendingBattles: PendingBattle[];
 }
 
 // Serializable version for JSON transport
@@ -1009,6 +1016,9 @@ export interface SerializedGameState {
   pendingBattles: PendingBattle[];
   sieges: Record<string, Siege>;
   relations: Record<string, DiplomaticRelation>;
+  territories: Record<string, Territory>;
+  factions: Record<string, Faction>;
+  pendingBattles: PendingBattle[];
 }
 
 // Message types for WebSocket communication
@@ -1054,6 +1064,7 @@ export type MessageType =
   | 'bless_champion'
   | 'assign_champion'
   | 'get_champions';
+  | 'policy_change';
 
 export interface GameMessage {
   type: MessageType;

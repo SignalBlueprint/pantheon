@@ -4,6 +4,7 @@
 
 // Target types for miracles
 export type MiracleTargetType = 'territory' | 'army' | 'faction' | 'champion';
+export type MiracleTargetType = 'territory' | 'army' | 'faction';
 
 // Miracle definition
 export interface Miracle {

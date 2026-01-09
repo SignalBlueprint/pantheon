@@ -11,6 +11,7 @@ import {
   getTradeBonus,
 } from '../systems/specialization.js';
 export { createInitialGameState };
+import { GameState, Territory, Faction, TICK_RATE_MS, DIVINE_POWER_MAX, DIVINE_POWER_REGEN_PER_TEMPLE } from '@pantheon/shared';
 
 // Tick phase callbacks
 export type TickPhase = (state: GameState) => void;
@@ -81,6 +82,7 @@ export class Ticker {
    * Phases: 1) Divine power regen, 2) Effect expiration, 3) Resource production,
    *         4) Population growth, 5) AI decisions, 6) Combat resolution,
    *         7) Siege progress, 8) Persistence, 9) Broadcast state
+   *         4) Population growth, 5) AI decisions, 6) Combat resolution, 7) Broadcast state
    */
   tick(): void {
     this.state.tick++;
@@ -131,6 +133,7 @@ export class Ticker {
     this.config.onPersistence?.(this.state);
 
     // Phase 12: Broadcast state
+    // Phase 7: Broadcast state
     this.config.onBroadcastState?.(this.state);
   }
 
@@ -167,6 +170,19 @@ export class Ticker {
       const productionMultiplier = effectProductionMultiplier * specProductionMultiplier;
 
       // Base production rates with all multipliers applied
+      // Calculate effect multipliers
+      let foodMultiplier = 1;
+      let productionMultiplier = 1;
+      for (const effect of territory.activeEffects) {
+        if (effect.modifier.foodMultiplier) {
+          foodMultiplier *= effect.modifier.foodMultiplier;
+        }
+        if (effect.modifier.productionMultiplier) {
+          productionMultiplier *= effect.modifier.productionMultiplier;
+        }
+      }
+
+      // Base production rates with effect multipliers applied
       const foodProduced = Math.floor(territory.food * 0.1 * foodMultiplier);
       const productionProduced = Math.floor(territory.production * 0.1 * productionMultiplier);
 
@@ -193,6 +209,9 @@ export class Ticker {
    */
   private processPopulationGrowth(): void {
     const BASE_POPULATION_CAP = 1000;
+   */
+  private processPopulationGrowth(): void {
+    const POPULATION_CAP = 1000;
     const GROWTH_RATE = 0.02; // 2% growth per tick
     const FOOD_PER_POP = 0.1; // Food consumed per population
 
@@ -214,6 +233,7 @@ export class Ticker {
         faction.resources.food -= foodConsumed;
         const growth = Math.floor(territory.population * GROWTH_RATE);
         territory.population = Math.min(populationCap, territory.population + growth);
+        territory.population = Math.min(POPULATION_CAP, territory.population + growth);
       } else {
         // Food deficit - population shrinks
         const deficit = foodConsumed - faction.resources.food;
@@ -292,4 +312,16 @@ export class Ticker {
   getCurrentTick(): number {
     return this.state.tick;
   }
+}
+
+/**
+ * Create initial game state
+ */
+export function createInitialGameState(): GameState {
+  return {
+    tick: 0,
+    territories: new Map(),
+    factions: new Map(),
+    pendingBattles: [],
+  };
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { SerializedGameState, Territory, Faction, Siege, GameMessage, DiplomaticMessage } from '@pantheon/shared';
+import { SerializedGameState, Territory, Faction, GameMessage } from '@pantheon/shared';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
 
@@ -210,6 +211,7 @@ export function useGameSocket(options: UseGameSocketOptions = {}): UseGameSocket
       console.error('[Socket] Failed to parse message:', e);
     }
   }, [onMiracleResult, onMiracleCast, onSiegeStarted, onSiegeProgress, onSiegeComplete, onSiegeBroken, onMessage]);
+  }, [onMiracleResult, onMiracleCast]);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;

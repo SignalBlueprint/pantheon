@@ -601,6 +601,11 @@ export class GameSocketServer {
       pendingBattles: state.pendingBattles,
       sieges,
       relations,
+    return {
+      tick: state.tick,
+      territories,
+      factions,
+      pendingBattles: state.pendingBattles,
     };
   }
 

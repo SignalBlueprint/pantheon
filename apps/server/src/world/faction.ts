@@ -44,6 +44,7 @@ export function createFaction(
   startingTerritory: Territory,
   deityId: string = 'ai',
   currentTick: number = 0
+  deityId: string = 'ai'
 ): Faction {
   const faction: Faction = {
     id: generateFactionId(),

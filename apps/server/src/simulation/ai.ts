@@ -37,6 +37,10 @@ import {
   respondToAlliance,
   breakAlliance,
 } from '../systems/diplomacy.js';
+  hexNeighbors,
+  hexId,
+  parseHexId,
+} from '@pantheon/shared';
 
 // AI decision costs
 const EXPANSION_COST = 20; // Production cost to claim a territory
@@ -64,6 +68,9 @@ function getAdjacentTerritories(
   const unclaimed: Territory[] = [];
   const enemy: Territory[] = []; // Only factions we're at war with
   const potentialTargets: Territory[] = []; // Factions we're neutral with
+): { unclaimed: Territory[]; enemy: Territory[] } {
+  const unclaimed: Territory[] = [];
+  const enemy: Territory[] = [];
   const seen = new Set<string>();
 
   for (const territoryId of faction.territories) {
@@ -100,6 +107,12 @@ function getAdjacentTerritories(
   }
 
   return { unclaimed, enemy, potentialTargets };
+        enemy.push(neighborTerritory);
+      }
+    }
+  }
+
+  return { unclaimed, enemy };
 }
 
 /**
@@ -121,6 +134,9 @@ export function processAIDecision(
 
   // Defense logic - if own territory under threat
   processDefense(state, faction, onSiegeEvent);
+export function processAIDecision(state: GameState, faction: Faction): void {
+  const { policies, resources } = faction;
+  const { unclaimed, enemy } = getAdjacentTerritories(state, faction);
 
   // Expansion logic - if expansion > 50 and adjacent unclaimed territory exists
   if (addRandomness(policies.expansion) > 50 && unclaimed.length > 0) {
@@ -187,6 +203,12 @@ function processDiplomacy(
       console.log(`[AI Diplomacy] ${faction.name} declared war on ${target?.name}`);
     }
   }
+  if (addRandomness(policies.aggression) > 50 && enemy.length > 0) {
+    processAggression(state, faction, enemy);
+  }
+
+  // Defense logic - if own territory under threat
+  processDefense(state, faction);
 }
 
 /**
@@ -213,6 +235,7 @@ function processExpansion(
 
 /**
  * Process aggression - start siege on enemy territory
+ * Process aggression - queue attack on enemy territory
  */
 function processAggression(
   state: GameState,
@@ -238,6 +261,20 @@ function processAggression(
     }
     return;
   }
+  enemy: Territory[]
+): void {
+  if (faction.resources.production < ATTACK_COST) return;
+
+  // Check if we already have a pending battle with this target
+  const pendingTargets = new Set(
+    state.pendingBattles
+      .filter((b) => b.attackerId === faction.id)
+      .map((b) => b.territoryId)
+  );
+
+  // Find a target we're not already attacking
+  const validTargets = enemy.filter((t) => !pendingTargets.has(t.id));
+  if (validTargets.length === 0) return;
 
   // Pick random target
   const target = validTargets[Math.floor(Math.random() * validTargets.length)];
@@ -315,10 +352,41 @@ function processDefense(
   }
 
   // Legacy support for pending battles (will be phased out)
+  const attackerStrength = calculateFactionStrength(state, faction);
+  const defenderStrength = target.population * 10;
+
+  // Only attack if we have reasonable chance
+  if (attackerStrength < defenderStrength * 0.5) return;
+
+  // Queue the attack
+  faction.resources.production -= ATTACK_COST;
+
+  const battle: PendingBattle = {
+    id: `battle_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+    attackerId: faction.id,
+    defenderId: target.owner!,
+    territoryId: target.id,
+    attackerStrength,
+    defenderStrength,
+    startedAtTick: state.tick,
+  };
+
+  state.pendingBattles.push(battle);
+  console.log(`[AI] ${faction.name} attacks ${defender.name}'s territory ${target.id}`);
+}
+
+/**
+ * Process defense - if own territory under threat, bolster defense
+ */
+function processDefense(state: GameState, faction: Faction): void {
+  // Check for incoming attacks
   const incomingAttacks = state.pendingBattles.filter(
     (b) => b.defenderId === faction.id
   );
 
+  if (incomingAttacks.length === 0) return;
+
+  // For now, just increase defender strength if we have resources
   for (const battle of incomingAttacks) {
     if (faction.resources.production >= 10) {
       faction.resources.production -= 10;
@@ -507,6 +575,14 @@ export function processAllAI(state: GameState, onSiegeEvent?: OnSiegeEvent): voi
 
 // Re-export siege event type for use in other modules
 export type { OnSiegeEvent };
+
+export function processAllAI(state: GameState): void {
+  for (const faction of state.factions.values()) {
+    // Skip player-controlled factions (deityId not 'ai')
+    if (faction.deityId !== 'ai') continue;
+    processAIDecision(state, faction);
+  }
+}
 
 /**
  * Resolve pending battles
